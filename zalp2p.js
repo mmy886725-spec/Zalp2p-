@@ -10,7 +10,7 @@ const supabase = window.supabase.createClient(
 );
 
 let currentUser = null;
-let balance = 100;
+let balance = 0;
 let ads = [];
 let referrals = [];
 
