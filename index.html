@@ -241,7 +241,20 @@ function toggleSidebar(st) {
     if(st === false) s.classList.remove('active'); else s.classList.toggle('active');    
 }    
 
+async function registerAuth(email, password) {
 
+    const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password
+    });
+
+    if (error) {
+        alert(error.message);
+        return null;
+    }
+
+    return data.user;
+       }
 
 async function register() {
 
@@ -259,9 +272,19 @@ async function register() {
     }
 
     if (p1 !== p2) {
-        return alert("كلمتا المرور غير متطابقتين");
-    }
+    return alert("كلمتا المرور غير متطابقتين");
+}
 
+const user = await registerAuth(email, p1);
+
+if (!user) return;
+
+// تسجيل قديم
+localStorage.setItem("user_" + email, p1);
+
+
+
+    
     // تسجيل قديم
     localStorage.setItem("user_" + email, p1);
 
