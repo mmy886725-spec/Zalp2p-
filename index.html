@@ -261,15 +261,7 @@ async function register() {
     if (p1 !== p2) {
     return alert("كلمتا المرور غير متطابقتين");
 }
-const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: p1
-});
 
-if (error) {
-    alert(error.message);
-    return;
-       }
 
 // تسجيل قديم
 localStorage.setItem("user_" + email, p1);
