@@ -262,16 +262,7 @@ async function register() {
     return alert("كلمتا المرور غير متطابقتين");
 }
 
-// إنشاء المستخدم في Supabase Authentication
-const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: p1
-});
 
-if (error) {
-    alert(error.message);
-    return;
-}
 // تسجيل قديم
 localStorage.setItem("user_" + email, p1);
 
@@ -320,16 +311,28 @@ if (ref !== "") {
         console.log(e);
     }
 }
-    // محاولة حفظ في supabase بدون تعطيل
     try {
-        await supabase.from("users").insert([{
-           id: data.user.id,
-            email: email,
-            balance: balance,
-            ref_code: "REF" + Date.now()
-        }]);
-    } catch(e) {
-        console.log("Supabase error:", e);
+
+    const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: p1
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    await supabase.from("users").insert([{
+        id: data.user.id,
+        email: email,
+        balance: balance,
+        ref_code: "REF" + Date.now()
+    }]);
+
+} catch(e) {
+    console.log(e);
+    }
     }
 
     currentUser = email;
