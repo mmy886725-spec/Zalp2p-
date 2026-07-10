@@ -317,10 +317,11 @@ if (ref !== "") {
     balance: balance,
     ref_code: "REF" + Date.now()
 }]);
+
+
 } catch(e) {
-    console.log(e);
-    }
-    }
+    console.log("Supabase error:", e);
+       }
 
     currentUser = email;
 
