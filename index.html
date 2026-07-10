@@ -311,25 +311,12 @@ if (ref !== "") {
         console.log(e);
     }
 }
-    try {
 
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: p1
-    });
-
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    await supabase.from("users").insert([{
-        id: data.user.id,
-        email: email,
-        balance: balance,
-        ref_code: "REF" + Date.now()
-    }]);
-
+       await supabase.from("users").insert([{
+    email: email,
+    balance: balance,
+    ref_code: "REF" + Date.now()
+}]);
 } catch(e) {
     console.log(e);
     }
