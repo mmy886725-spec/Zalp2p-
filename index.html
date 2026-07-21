@@ -347,7 +347,7 @@ try {
 
     alert("تم إنشاء الحساب بنجاح");
 }
-function login() {
+async function login() {
 
     const email = document.getElementById('login-email').value.trim();
 
@@ -377,7 +377,16 @@ function login() {
     }
     
     currentUser = email;
+const { data, error } = await supabase
+  .from("users")
+  .select("balance")
+  .eq("email", currentUser)
+  .single();
 
+if (data) {
+    balance = data.balance;
+       }
+       
     document.getElementById('navbar').style.display = 'flex';
 
     updateUI();
