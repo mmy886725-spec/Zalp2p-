@@ -35,7 +35,7 @@ async function saveCurrentUser(email) {
     if (error) throw error;
  
     currentUser = email;
-    balance = data.balance || 0;
+    
 await loadBalanceFromDB();
 listenToBalanceChanges();
 
