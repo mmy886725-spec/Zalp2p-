@@ -410,6 +410,47 @@ async function saveCurrentUser(email) {
 
 }
 
+/* =========================
+   تحديث الرصيد المباشر من قاعدة البيانات
+========================= */
+
+// دالة تجلب الرصيد وتحدث الشاشة فوراً
+async function fetchLatestBalance() {
+  // إذا لم يكن المستخدم مسجلاً لدخوله لا تفعل شيئاً
+  if (!currentUser) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("balance")
+      .eq("email", currentUser)
+      .maybeSingle();
+
+    if (error) {
+      console.log("خطأ قراءة الرصيد:", error.message);
+      return;
+    }
+
+    if (data && data.balance !== undefined && data.balance !== null) {
+      // تحديث الرقم وعرضه في الهيدر
+      balance = parseFloat(data.balance);
+      
+      const balanceElement = document.getElementById("user-balance");
+      if (balanceElement) {
+        balanceElement.innerText = balance.toFixed(2);
+      }
+    }
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+// تشغيل جلب الرصيد تلقائياً كل 3 ثوانٍ بمجرد فتح الموقع
+setInterval(() => {
+  fetchLatestBalance();
+}, 3000);
+
+
 
 fetch("/api/notify", {
   method: "POST",
