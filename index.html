@@ -1,0 +1,617 @@
+<!DOCTYPE html> 
+<html lang="ar" dir="rtl">    <head>    
+    <meta charset="UTF-8">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>zalP2P - Smart Exchange Platform</title>    
+  <link rel="icon" type="image/jpeg" href="zalp2p.png"> 
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">    <script type="text/javascript">    
+    function googleTranslateElementInit() {    
+        new google.translate.TranslateElement({    
+            pageLanguage: 'ar',    
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,    
+            autoDisplay: true    
+        }, 'google_translate_element');    
+    }    
+</script> 
+
+
+
+
+
+
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>    <style>    
+    :root {    
+        --primary: #6366f1;    
+        --secondary: #4f46e5;    
+        --bg: #f8fafc;    
+        --card: #ffffff;    
+        --text: #1e293b;    
+        --success: #22c55e;    
+        --danger: #ef4444;    
+    }    
+  
+    * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }    
+    body { background-color: var(--bg); color: var(--text); margin: 0; top: 0 !important; }    
+  
+    /* إخفاء عناصر جوجل المزعجة للحفاظ على شكل الموقع */    
+    .goog-te-banner-frame.skiptranslate, .goog-te-gadget-icon { display: none !important; }    
+    .goog-te-gadget-simple { background-color: transparent !important; border: none !important; }    
+    #google_translate_element { display: none; }    
+    .skiptranslate iframe { visibility: hidden !important; display: none !important; }    
+  
+    nav { background: var(--primary); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }    
+    .menu-btn { cursor: pointer; font-size: 1.5rem; }    
+    .balance-badge { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; }    
+  
+    .sidebar { position: fixed; right: -280px; top: 0; width: 280px; height: 100%; background: var(--card); box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: 0.3s; z-index: 200; padding: 20px; }    
+    .sidebar.active { right: 0; }    
+    .sidebar ul { list-style: none; padding: 0; }    
+    .sidebar li { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }    
+    .sidebar li:hover { background: #f1f5f9; color: var(--primary); }    
+  
+    .container { max-width: 800px; margin: 20px auto; padding: 15px; }    
+    .page { display: none; }    
+    .page.active { display: block; }    
+  
+    .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }    
+    input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }    
+    button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }    
+    button:disabled { background: #ccc; cursor: not-allowed; }    
+    .btn-primary { background: var(--primary); color: white; }    
+    .btn-success { background: var(--success); color: white; }    
+    .btn-danger { background: var(--danger); color: white; }    
+  
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }    
+    .tab { flex: 1; text-align: center; padding: 10px; background: #e2e8f0; border-radius: 8px; cursor: pointer; }    
+    .tab.active { background: var(--primary); color: white; }    
+    .ad-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }    
+    .chat-box { height: 300px; border: 1px solid #eee; overflow-y: auto; padding: 10px; background: #f9f9f9; margin-bottom: 10px; border-radius: 10px; display: flex; flex-direction: column; }    
+    .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; max-width: 80%; word-wrap: break-word; }    
+    .msg.sent { background: var(--primary); color: white; align-self: flex-start; }    
+    .msg.received { background: #e2e8f0; align-self: flex-end; }    
+    .uploaded-img { max-width: 100%; border-radius: 8px; margin-top: 5px; border: 2px solid var(--primary); }    
+  
+    .ref-stats { display: flex; gap: 15px; margin-bottom: 20px; }    
+    .stat-item { flex: 1; background: #f1f5f9; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }    
+        
+    /* منع ترجمة كلمة SOL لأنها رمز عملة */    
+    .notranslate { translate: no; }    
+</style>  </head>    
+<body>  
+<div id="google_translate_element"></div>    <div id="sidebar" class="sidebar">    
+    <h3 onclick="toggleSidebar()">✖ إغلاق</h3>    
+    <ul>    
+        <li onclick="showPage('market')">العودة للسوق</li>    
+        <li onclick="showPage('my-ads')">إعلاناتي (إلغاء/تعديل)</li>    
+        <li onclick="showPage('orders')">الطلبات المكتملة</li>    
+        <li onclick="showPage('referral')">نظام الإحالة</li>    
+        <li onclick="logout()" style="color: var(--danger);">تسجيل الخروج</li>    
+    </ul>    
+</div>    <nav id="navbar" style="display: none;">    
+    <div class="menu-btn" onclick="toggleSidebar()">☰</div>    
+    <div class="logo">ZAlP2P</div>    
+    <div class="balance-badge"><span id="user-balance">00.00</span> <span class="notranslate">SOL</span></div>    
+</nav>    <div class="container">    
+    <section id="login-page" class="page active">    
+        <div class="card">    
+            <h2>تسجيل الدخول</h2>    
+            <input type="email" id="login-email" placeholder="البريد الإلكتروني">    <input type="password" id="login-pass" placeholder="كلمة المرور">    
+            
+            
+        <button class="btn-primary" onclick="login()">دخول</button>    
+        <p onclick="showPage('register-page')" style="text-align:center; cursor:pointer; color:var(--primary)">إنشاء حساب جديد</p>    
+    </div>    
+</section>    
+
+<section id="register-page" class="page">    
+    <div class="card">    
+        <h2>إنشاء حساب</h2>    
+        <input type="email" id="reg-email" placeholder="البريد الإلكتروني">    
+        <input type="password" id="reg-pass" placeholder="كلمة المرور">    
+        <input type="password" id="reg-pass-confirm" placeholder="تأكيد كلمة المرور">    
+        <input type="text" id="ref-code-input" placeholder="كود الإحالة (اختياري)">    
+        <button class="btn-primary" onclick="register()">إنشاء الحساب</button>    
+        <p onclick="showPage('login-page')" style="text-align:center; cursor:pointer;">العودة للدخول</p>    
+    </div>    
+</section>
+
+<section id="market" class="page">    
+            <div class="tabs">    
+                <div class="tab active" onclick="switchMarket('buy')">شراء</div>    
+                <div class="tab" onclick="switchMarket('sell')">بيع</div>    
+            </div>    
+            <button class="btn-success" style="margin-bottom: 20px;" onclick="showPage('create-ad')">➕ نشر إعلان تجاري</button>    
+            <div id="ads-list"></div>    
+        </section>  <section id="my-ads" class="page">    
+        <div class="card">    
+            <h2>إعلاناتي النشطة</h2>    
+            <div id="my-ads-list"></div>    
+        </div>    
+    </section>    <section id="create-ad" class="page">    
+    <div class="card">    
+        <h2>إعلان جديد</h2>    
+        <select id="ad-type">    
+            <option value="buy">أريد الشراء من المستخدمين</option>    
+            <option value="sell">أريد البيع للمستخدمين</option>  
+        
+        </select>    
+        <input type="number" id="ad-rate" step="0.01" placeholder="سعر الصرف (مثلاً 0.99)">    
+        <select id="ad-payment">    
+            <option value="PayPal">PayPal</option>    
+            <option value="Payoneer">Payoneer</option>   <<option value="USDT">USDT</option> 
+        </select>    
+        <input type="number" id="ad-min" placeholder="الحد الأدنى">    
+        <input type="number" id="ad-max" placeholder="الحد الأقصى">    
+        <button class="btn-primary" onclick="postAd()">نشر الآن</button>    
+        <button class="btn-danger" style="margin-top:5px" onclick="showPage('market')">إلغاء</button>    
+    </div>    
+</section>    
+
+<section id="trade-exec" class="page">    
+    <div class="card">    
+        <h2 id="exec-title"></h2>    
+        <p>السعر: <b id="exec-rate"></b> | الوسيلة: <b id="exec-method"></b></p>    
+        <input type="number" id="exec-amount" oninput="calculateReceive()" placeholder="المبلغ بـ USD">    
+        <p>الصافي: <mark id="exec-result">0</mark> <span class="notranslate">SOL</span></p>    
+        <button class="btn-success" onclick="openChat()">بدء المعاملة</button>    
+    </div>    
+</section>    
+
+<section id="chat-page" class="page">    
+    <div class="card">    
+        <h3>محادثة المعاملة</h3>    
+        <div id="role-badge" style="background:#e0e7ff; padding:5px; border-radius:5px; margin-bottom:10px; font-weight:bold; text-align:center;"></div>    
+        <div class="chat-box" id="chat-content"></div>    
+        <div style="display:flex; gap:5px; margin-bottom:10px;">    
+            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="margin:0;">    
+            <button class="btn-primary" style="width:auto;" onclick="sendTextMessage()">إرسال</button>    
+        </div>    
+        <div id="buyer-section" style="display:none; border-top:1px solid #eee; padding-top:10px;">    
+            <label>إرفاق صورة التحويل (إجباري للمشتري):</label>    
+            <input type="file" id="chat-file" accept="image/*" onchange="handleImageUpload(event)">    
+            <div id="buyer-controls" style="display:flex; gap:5px; margin-top:10px;">    
+                <button class="btn-success" id="confirm-pay-btn" disabled onclick="finishTrade(true)">تم الدفع (تحرير الرصيد)</button>    
+                <button class="btn-danger" onclick="finishTrade(false)">إلغاء</button>    
+            </div>    
+        </div>    
+        <button class="btn-primary" style="margin-top:10px" onclick="alert('تم إرسال بلاغ للإدارة')">⚠️ إبلاغ عن مشكلة</button>    
+    </div>    
+</section>    
+
+<section id="referral" class="page">    
+    <div class="card">    
+        <h2>نظام الإحالة</h2>    
+        <div class="ref-stats">    
+            <div class="stat-item">    
+                <small>عدد الإحالات</small>    
+                <div id="ref-count" style="font-size:1.5rem; font-weight:bold; color:var(--primary);">0</div>    
+            </div>    
+            <div class="stat-item">    
+                <small>إجمالي الأرباح</small>    
+                <div id="ref-total-profit" style="font-size:1.5rem; font-weight:bold; color:var(--success);">0 <span class="notranslate">SOL</span></div>    
+            </div>    
+        </div>    
+        <p>كود الإحالة الخاص بك: <strong id="my-ref-code" class="notranslate">SOL-USER-88</strong></p>    
+        <div id="ref-notifications"></div>    
+    </div>    
+</section>    
+
+<section id="orders" class="page">    
+    <div class="card">    
+        <h2>الطلبات المكتملة</h2>    
+        <div id="completed-list"></div>    
+    </div>    
+</section>
+
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://ocrkyftwzsqumkebythf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn";
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
+
+
+
+
+   <script>   
+   let merchantStatus = {}; // حالة التجار: مشغول أو متاح
+    let currentUser = null;    
+    let balance = 0;    
+    let ads = [];    
+    let referrals = [];    
+    let completedOrders = [];    
+    let currentTrade = null;    
+    let hasReferralData = false;    // ميزة الترجمة التلقائية بناءً على لغة الجهاز    
+window.addEventListener('load', function() {    
+    let userLang = navigator.language || navigator.userLanguage;    
+    userLang = userLang.split('-')[0];     
+    if (userLang !== 'ar') {    
+        setTimeout(() => {    
+            const select = document.querySelector('select.goog-te-combo');    
+            if (select) {    
+                select.value = userLang;    
+                select.dispatchEvent(new Event('change'));    
+            }    
+        }, 1500);     
+    }    
+});    
+
+function showPage(id) {    
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));    
+    document.getElementById(id).classList.add('active');    
+    toggleSidebar(false);    
+    if(id === 'my-ads') renderMyAds();    
+    if(id === 'referral') updateUI();    
+}    
+
+function toggleSidebar(st) {    
+    const s = document.getElementById('sidebar');    
+    if(st === false) s.classList.remove('active'); else s.classList.toggle('active');    
+}    
+
+
+
+async function register() {
+
+    const email = document.getElementById('reg-email').value.trim();
+    const p1 = document.getElementById('reg-pass').value;
+    const p2 = document.getElementById('reg-pass-confirm').value;
+    const ref = document.getElementById('ref-code-input').value.trim();
+
+    if (!email || !email.includes('@')) {
+        return alert("يرجى إدخال بريد إلكتروني صالح");
+    }
+
+    if (p1 === "" || p2 === "") {
+        return alert("يرجى إدخال كلمة المرور");
+    }
+
+    if (p1 !== p2) {
+    return alert("كلمتا المرور غير متطابقتين");
+}
+
+
+// تسجيل قديم
+localStorage.setItem("user_" + email, p1);
+
+
+// الكود الجديد المطور لإظهار الخطأ على الهاتف (نسخة مصلحة ومضمونة)
+try {
+    // قمنا بتغيير الاسم هنا إلى authClient واستدعينا window.supabase لضمان عدم حدوث تضارب
+    const authClient = window.supabase.createClient('https://ocrkyftwzsqumkebythf.supabase.co', 'sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn');
+  
+    const { data: authData, error: authError } = await authClient.auth.signUp({
+        email: email,
+        password: p1
+    });
+
+    if (authError) {
+        alert("خطأ من Supabase: " + authError.message);
+        return; // 🛑 أضف هذا السطر لمنع ظهور رسالة النجاح إذا فشل الحساب
+    }
+} catch (err) {
+    alert("حدث خطأ في النظام: " + err.message);
+    return; // 🛑 أضف هذا السطر لمنع ظهور رسالة النجاح إذا حدث خطأ اتصال
+}
+
+
+
+if (ref !== "") {
+
+    const { data: refUser } = await supabase
+        .from("users")
+        .select("email")
+        .eq("ref_code", ref)
+        .single();
+
+    if (!refUser) {
+        return alert("كود الإحالة غير صحيح");
+    }
+
+    if (refUser.email === email) {
+        return alert("لا يمكنك استخدام كودك الخاص");
+    }
+
+    if (hasReferralData) {
+        return alert("لا يسمح لهذا الجهاز بالتسجيل بأكثر من إحالة");
+    }
+
+    balance += 5;
+
+    referrals.push({
+        user: email,
+        bonus: 10
+    });
+
+    hasReferralData = true;
+
+    try {
+        await supabase.from("referrals").insert([{
+            owner: ref,
+            new_user: email,
+            bonus: 10
+        }]);
+    }catch(e) {
+        console.log(e);
+    }
+    
+}
+try {
+    await supabase.from("users").insert([{
+        email: email,
+        balance: balance,
+        ref_code: "REF" + Date.now()
+    }]);
+} catch (e) {
+    console.log("Supabase error:", e);
+}
+
+    currentUser = email;
+
+    document.getElementById('navbar').style.display = 'flex';
+
+    updateUI();
+    showPage('market');
+
+    alert("تم إنشاء الحساب بنجاح");
+}
+function login() {
+
+    const email = document.getElementById('login-email').value.trim();
+
+    const password = document.getElementById('login-pass').value;
+
+    // التحقق من الإيميل
+    if (!email || !email.includes('@')) {
+        return alert("يرجى إدخال بريد إلكتروني صالح");
+    }
+
+    // التحقق من كلمة المرور
+    if (!password || password.trim() === "") {
+        return alert("يرجى إدخال كلمة المرور");
+    }
+
+    // جلب كلمة المرور المحفوظة
+    const savedPassword = localStorage.getItem("user_" + email);
+
+    // التحقق من وجود الحساب
+    if (savedPassword === null) {
+        return alert("الحساب غير موجود");
+    }
+
+    // التحقق من صحة كلمة المرور
+    if (savedPassword !== password) {
+        return alert("كلمة المرور غير صحيحة");
+    }
+    
+    currentUser = email;
+
+
+
+
+    document.getElementById('navbar').style.display = 'flex';
+
+    updateUI();
+
+    showPage('market');
+
+    alert("تم تسجيل الدخول بنجاح");
+
+    // جلب الرصيد من Supabase
+async function loadBalance() {
+  if (!currentUser) return;
+  const { data } = await supabase
+    .from("users")
+    .select("balance")
+    .eq("email", currentUser)
+    .single();
+
+  if (data) {
+    balance = parseFloat(data.balance) || 0;
+    updateUI();
+  }
+}
+
+// داخل دالة login() بعد نجاح الدخول:
+loadBalance();
+listenBalance();
+    
+}
+
+
+
+function postAd() {
+    const ad = {
+        id: Date.now(),
+        merchant: currentUser,
+        type: document.getElementById('ad-type').value,
+        rate: document.getElementById('ad-rate').value,
+        payment: document.getElementById('ad-payment').value,
+        min: document.getElementById('ad-min').value,
+        max: document.getElementById('ad-max').value
+    };
+
+    ads.push(ad);
+
+    if (!merchantStatus[currentUser]) {
+        merchantStatus[currentUser] = "free";
+    }
+
+    showPage('market');
+    renderAds(ad.type);
+}
+
+
+
+function renderAds(type = 'buy') {
+    const list = document.getElementById('ads-list');
+    list.innerHTML = '';
+
+    ads.filter(a => a.type === type).forEach(ad => {
+        const status =
+            merchantStatus[ad.merchant] === "busy"
+            ? '<span style="color:red;font-weight:bold;">🔴 التاجر مشغول</span>'
+            : '<span style="color:green;font-weight:bold;">🟢 التاجر متاح</span>';
+
+        const div = document.createElement('div');
+        div.className = 'ad-card';
+        div.innerHTML = `
+            <div>
+                <b>${ad.payment}</b><br>
+                <small>السعر: ${ad.rate} | الحدود: ${ad.min}-${ad.max}</small><br>
+                ${status}
+            </div>
+            <button class="btn-primary" style="width:auto"
+                ${merchantStatus[ad.merchant] === "busy" ? "disabled" : ""}
+                onclick="startTrade(${ad.id})">
+                ${ad.type==='buy'?'بيع له':'شراء منه'}
+            </button>
+        `;
+        list.appendChild(div);
+    });
+}    
+
+function renderMyAds() {    
+    const list = document.getElementById('my-ads-list');    
+    list.innerHTML = '';    
+    ads.filter(a => a.merchant === currentUser).forEach(ad => {    
+        const div = document.createElement('div');    
+        div.className = 'ad-card';    
+        div.innerHTML = `<div><b>${ad.type==='buy'?'شراء':'بيع'} - ${ad.payment}</b></div>    
+        <button class="btn-danger" style="width:auto" onclick="deleteAd(${ad.id})">إلغاء الإعلان ✖</button>`;    
+        list.appendChild(div);    
+    });    
+}    
+function deleteAd(id) {    
+    ads = ads.filter(a => a.id !== id);    
+    renderMyAds();    
+    renderAds();    
+}    
+
+function startTrade(id) {    
+    currentTrade = ads.find(a => a.id === id);    
+    showPage('trade-exec');    
+    document.getElementById('exec-title').innerText = currentTrade.type === 'buy' ? 'بيع للتاجر' : 'شراء من التاجر';    
+    document.getElementById('exec-rate').innerText = currentTrade.rate;    
+    document.getElementById('exec-method').innerText = currentTrade.payment;    
+}    
+
+function calculateReceive() {    
+    const v = document.getElementById('exec-amount').value;    
+    document.getElementById('exec-result').innerText = (v / currentTrade.rate).toFixed(2);    
+}    
+
+function openChat() {    
+    const v = parseFloat(document.getElementById('exec-amount').value);    
+    if(v < currentTrade.min || v > currentTrade.max) return alert("المبلغ خارج الحدود!");    
+    showPage('chat-page') ;   merchantStatus[currentTrade.merchant] = "busy";
+renderAds(); 
+    const content = document.getElementById('chat-content');    
+    const buyerSection = document.getElementById('buyer-section');    
+    const badge = document.getElementById('role-badge');    
+    let amIBuyer = false;    
+    if (currentTrade.type === 'sell' && currentUser !== currentTrade.merchant) amIBuyer = true;    
+    if (currentTrade.type === 'buy' && currentUser === currentTrade.merchant) amIBuyer = true;    
+    content.innerHTML = `<div class="msg received">تم فتح المعاملة. يمكنك الآن المراسلة.</div>`;    
+    if (amIBuyer) {    
+        badge.innerText = "أنت المشتري";    
+        buyerSection.style.display = 'block';    
+    } else {    
+        badge.innerText = "أنت البائع";    
+        buyerSection.style.display = 'none';    
+    }    
+}    
+
+function sendTextMessage() {    
+    const input = document.getElementById('chat-input');    
+    const content = document.getElementById('chat-content');    
+    if(input.value.trim() === "") return;    
+    content.innerHTML += `<div class="msg sent">${input.value}</div>`;    
+    input.value = "";    
+    content.scrollTop = content.scrollHeight;    
+}    
+
+function handleImageUpload(event) {    
+    const file = event.target.files[0];    
+    if (file) {    
+        const reader = new FileReader();    
+        reader.onload = function(e) {    
+            const chat = document.getElementById('chat-content');    
+            chat.innerHTML += `<div class="msg sent"><i>إثبات الدفع:</i><br><img src="${e.target.result}" class="uploaded-img"></div>`;    
+            document.getElementById('confirm-pay-btn').disabled = false;    
+            chat.scrollTop = chat.scrollHeight;};    
+        reader.readAsDataURL(file);    
+    }    
+}    
+
+function finishTrade(ok) {
+
+    merchantStatus[currentTrade.merchant] = "free";
+    renderAds();
+
+    if(ok) {
+        const sol = parseFloat(document.getElementById('exec-result').innerText);
+
+        balance = (currentTrade.type === 'sell' && currentUser !== currentTrade.merchant)
+            ? balance + sol
+            : balance - sol;
+
+        completedOrders.push({
+            type: currentTrade.type,
+            amount: sol,
+            time: new Date().toLocaleString()
+        });
+
+        alert("تمت العملية بنجاح!");
+        updateUI();
+        showPage('market');
+    } else {
+        alert("تم الإلغاء");
+        showPage('market');
+    }
+} 
+
+function updateUI() {    
+    document.getElementById('user-balance').innerText = balance.toFixed(2);    
+    document.getElementById('ref-count').innerText = referrals.length;    
+    const totalRefProfit = referrals.length * 10;    
+    document.getElementById('ref-total-profit').innerText = totalRefProfit + " SOL";    
+    document.getElementById('ref-notifications').innerHTML = referrals.map(r =>     
+        `<div style="background:#dcfce7; padding:10px; margin:5px; border-radius:8px">🔔 مستخدم (${r.user}) سجل عبرك! ربحت 10 SOL</div>`    
+    ).join('');    
+    document.getElementById('completed-list').innerHTML = completedOrders.map(o =>     
+        `<div style="padding:10px; border-bottom:1px solid #eee"><b>${o.type}</b>: ${o.amount} SOL <br> <small>${o.time}</small></div>`    
+    ).join('');    
+}    
+
+function logout() { location.reload(); }    
+function switchMarket(t) {    
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));    
+    event.target.classList.add('active');    
+    renderAds(t);    
+}
+
+</script>    
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  // تأكد من وضع قيم مشروعك الحقيقية هنا إذا لم تكن قد وضعتها بعد
+  const supabase = supabase.createClient('https://ocrkyftwzsqumkebythf.supabase.co', 
+  
+  
+  'sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn');
+</script>
+
+<script src="zalp2p.js"></script>
+
+    <!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BKJEv2cCsPYFqp4EgvqCocEtV_wH96Fz_2T-jxf7nOMtcTJ2_IonR06bQVIYbzRlK6tcDPZSI0encF0OoDXbo4c' });</script><!-- end webpushr code -->
+
+</body> 
+
