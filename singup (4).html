@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">إنشاء حساب جديد - منصة P2P</title>
+
+    <!-- مكتبة Supabase JS وملف التكوين -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="language.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f6ff;
+            color: #1e3a8a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .toast-notification-box {
+            position: fixed;
+            top: 20px;
+            right: 50%;
+            transform: translateX(50%) translateY(-100px);
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            max-width: 90%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);
+            border-right: 5px solid #2563eb;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        html[dir="ltr"] .toast-notification-box {
+            border-right: none;
+            border-left: 5px solid #2563eb;
+        }
+
+        .toast-notification-box.active-toast {
+            transform: translateX(50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast-notification-box.toast-error-style {
+            border-right-color: #1d4ed8;
+            background-color: #eff6ff;
+        }
+
+        html[dir="ltr"] .toast-notification-box.toast-error-style {
+            border-left-color: #1d4ed8;
+        }
+
+        .toast-notification-box.toast-success-style {
+            border-right-color: #2563eb;
+            background-color: #ffffff;
+        }
+
+        html[dir="ltr"] .toast-notification-box.toast-success-style {
+            border-left-color: #2563eb;
+        }
+
+        .toast-status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #2563eb;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .toast-content-wrapper {
+            flex-grow: 1;
+        }
+
+        .toast-head-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 2px;
+        }
+
+        .toast-body-message {
+            font-size: 12px;
+            color: #3b82f6;
+        }
+
+        .toast-close-button {
+            background: none;
+            border: none;
+            color: #1e3a8a;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            opacity: 0.6;
+        }
+
+        .toast-close-button:hover {
+            opacity: 1;
+        }
+
+        .register-card-container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            padding: 35px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.08);
+            border: 1px solid #dbeafe;
+        }
+
+        .brand-header-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .p2p-brand-logo {
+            width: 56px;
+            height: 56px;
+            background-color: #2563eb;
+            border-radius: 16px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 1px;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+        }
+
+        .main-portal-title {
+            font-size: 22px;
+            color: #1e3a8a;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .sub-portal-title {
+            color: #3b82f6;
+            font-size: 13px;
+        }
+
+        .input-form-group {
+            margin-bottom: 16px;
+        }
+
+        .field-input-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+
+        .text-field-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #bfdbfe;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            background-color: #f8fafc;
+            color: #1e3a8a;
+        }
+
+        .text-field-input:focus {
+            border-color: #2563eb;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .password-field-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-field-wrapper .text-field-input {
+            padding-left: 55px;
+        }
+
+        html[dir="ltr"] .password-field-wrapper .text-field-input {
+            padding-left: 14px;
+            padding-right: 55px;
+        }
+
+        .toggle-password-button {
+            position: absolute;
+            left: 10px;
+            background: none;
+            border: none;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        html[dir="ltr"] .toggle-password-button {
+            left: auto;
+            right: 10px;
+        }
+
+        .toggle-password-button:hover {
+            background-color: #eff6ff;
+        }
+
+        .captcha-challenge-box {
+            background-color: #f8fafc;
+            border: 1.5px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .captcha-left-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .captcha-checkbox-input {
+            width: 20px;
+            height: 20px;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
+
+        .captcha-label-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e3a8a;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .captcha-brand-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .captcha-icon-graphic {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #2563eb;
+            border-radius: 50%;
+            border-top-color: transparent;
+            transform: rotate(45deg);
+        }
+
+        .captcha-subtext {
+            font-size: 9px;
+            color: #3b82f6;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        .submit-register-button {
+            width: 100%;
+            padding: 13px;
+            background-color: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .submit-register-button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .submit-register-button:active {
+            transform: scale(0.99);
+        }
+
+        .submit-register-button:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .card-footer-section {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 13px;
+            color: #1e3a8a;
+        }
+
+        .login-account-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .login-account-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="toastNotificationBox" class="toast-notification-box">
+        <div id="toastStatusIcon" class="toast-status-icon">✓</div>
+        <div class="toast-content-wrapper">
+            <div id="toastHeadTitle" class="toast-head-title" data-i18n="defaultToastTitle">تنبيه</div>
+            <div id="toastBodyMessage" class="toast-body-message" data-i18n="defaultToastMessage">رسالة التنبيه هنا</div>
+        </div>
+        <button type="button" id="toastCloseButton" class="toast-close-button" aria-label="Close" data-i18n-aria-label="toastCloseAriaLabel">✕</button>
+    </div>
+
+    <div class="register-card-container">
+        <div class="brand-header-section">
+            <div class="p2p-brand-logo">P2P</div>
+            <h1 class="main-portal-title" data-i18n="mainPortalTitle">منصة P2P</h1>
+            <p class="sub-portal-title" data-i18n="subPortalTitle">إنشاء حساب جديد للتداول المباشر</p>
+        </div>
+        
+        <form id="p2pRegisterForm">
+            <div class="input-form-group">
+                <label for="userNameInput" class="field-input-label" data-i18n="userNameLabel">الاسم الكامل</label>
+                <input type="text" id="userNameInput" class="text-field-input" placeholder="أسمك" data-i18n-placeholder="userNamePlaceholder" required>
+            </div>
+
+            <div class="input-form-group">
+                <label for="userEmailInput" class="field-input-label" data-i18n="userEmailLabel">البريد الإلكتروني</label>
+                <input type="email" id="userEmailInput" class="text-field-input" placeholder="name@example.com" data-i18n-placeholder="userEmailPlaceholder" required>
+            </div>
+            
+            <div class="input-form-group">
+                <label for="userPasswordInput" class="field-input-label" data-i18n="userPasswordLabel">كلمة المرور</label>
+                <div class="password-field-wrapper">
+                 <input type="password" id="userPasswordInput" class="text-field-input" data-i18n-placeholder="userPasswordPlaceholder" placeholder="••••••••" required>
+                    <button type="button" id="togglePasswordBtn1" class="toggle-password-button" data-i18n="btnShow">إظهار</button>
+                </div>
+            </div>
+
+            <div class="input-form-group">
+                <label for="userConfirmPasswordInput" class="field-input-label" data-i18n="userConfirmPasswordLabel">تأكيد كلمة المرور</label>
+                <div class="password-field-wrapper">
+                    <input type="password" id="userConfirmPasswordInput" class="text-field-input" data-i18n-placeholder="userConfirmPasswordPlaceholder" placeholder="••••••••" required>
+                    <button type="button" id="togglePasswordBtn2" class="toggle-password-button" data-i18n="btnShow">إظهار</button>
+                </div>
+            </div>
+
+            <div class="captcha-challenge-box">
+                <div class="captcha-left-content">
+                    <input type="checkbox" id="humanVerificationCheckbox" class="captcha-checkbox-input">
+                    <label for="humanVerificationCheckbox" class="captcha-label-text" data-i18n="captchaLabel">أنا لست برنامج روبوت</label>
+                </div>
+                <div class="captcha-brand-badge">
+                    <div class="captcha-icon-graphic"></div>
+                    <span class="captcha-subtext" data-i18n="captchaSubtext">حماية P2P</span>
+                </div>
+            </div>
+            
+            <button type="submit" id="submitRegisterButton" class="submit-register-button" data-i18n="submitRegisterBtn">إنشاء الحساب</button>
+        </form>
+
+        <div class="card-footer-section">
+            <p><span data-i18n="alreadyHaveAccount">لديك حساب بالفعل؟</span> <a href="index.html" class="login-account-link" data-i18n="loginLink">تسجيل الدخول</a></p>
+        </div>
+    </div>
+
+<script>
+    // ==========================================
+    // 1. عميل Supabase الموحّد
+    // ==========================================
+    const supabaseClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient)
+        ? window.supabaseClient
+        : null;
+
+    // اللغة الحالية تُقرأ من النظام المركزي فقط
+    let currentLang = (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function')
+        ? window.ZALLanguage.getLanguage()
+        : (document.documentElement.lang || 'ar');
+
+    // t() تعتمد حصراً على دالة النظام المركزي translateKey
+    function t(key, vars) {
+        let str = (typeof window.translateKey === 'function') ? window.translateKey(key) : key;
+        if (vars && typeof str === 'string') {
+            Object.keys(vars).forEach(v => {
+                str = str.replace(new RegExp('\\{' + v + '\\}', 'g'), vars[v]);
+            });
+        }
+        return str;
+    }
+
+    // setLanguage تفوّض التطبيق الكامل إلى النظام المركزي
+    function setLanguage(lang) {
+        currentLang = lang;
+
+        // التطبيق الكامل عبر النظام المركزي (يشمل data-i18n و placeholder و title و aria-label و lang و dir)
+        if (window.ZALLanguage && typeof window.ZALLanguage.apply === 'function') {
+            window.ZALLanguage.apply(lang);
+        }
+
+        // إعادة ترجمة أزرار إظهار/إخفاء كلمة المرور (نصوص ديناميكية)
+        [ { btn: togglePasswordBtn1, inp: userPasswordInput }, { btn: togglePasswordBtn2, inp: userConfirmPasswordInput } ].forEach(item => {
+            if (item.btn && item.inp) {
+                const isPassword = item.inp.getAttribute('type') === 'password';
+                item.btn.textContent = isPassword ? t('btnHide') : t('btnShow');
+            }
+        });
+    }
+
+    // ==========================================
+    // 2. العناصر المحددة
+    // ==========================================
+    const p2pRegisterForm = document.getElementById('p2pRegisterForm');
+    const userNameInput = document.getElementById('userNameInput');
+    const userEmailInput = document.getElementById('userEmailInput');
+    const userPasswordInput = document.getElementById('userPasswordInput');
+    const userConfirmPasswordInput = document.getElementById('userConfirmPasswordInput');
+
+    const togglePasswordBtn1 = document.getElementById('togglePasswordBtn1');
+    const togglePasswordBtn2 = document.getElementById('togglePasswordBtn2');
+
+    const humanVerificationCheckbox = document.getElementById('humanVerificationCheckbox');
+    const submitRegisterButton = document.getElementById('submitRegisterButton');
+
+    const toastNotificationBox = document.getElementById('toastNotificationBox');
+    const toastHeadTitle = document.getElementById('toastHeadTitle');
+    const toastBodyMessage = document.getElementById('toastBodyMessage');
+    const toastStatusIcon = document.getElementById('toastStatusIcon');
+    const toastCloseButton = document.getElementById('toastCloseButton');
+
+    let toastTimer = null;
+
+    // ==========================================
+    // 3. محرك التنبيهات
+    // ==========================================
+    function triggerToastNotification(title, message, type = 'success') {
+        clearTimeout(toastTimer);
+        toastHeadTitle.textContent = title;
+        toastBodyMessage.textContent = message;
+
+        if (type === 'error') {
+            toastNotificationBox.className = 'toast-notification-box active-toast toast-error-style';
+            toastStatusIcon.textContent = '!';
+        } else {
+            toastNotificationBox.className = 'toast-notification-box active-toast toast-success-style';
+            toastStatusIcon.textContent = '✓';
+        }
+
+        toastTimer = setTimeout(() => {
+            closeToastNotification();
+        }, 4000);
+    }
+
+    function closeToastNotification() {
+        toastNotificationBox.classList.remove('active-toast');
+    }
+
+    toastCloseButton.addEventListener('click', closeToastNotification);
+
+    // ==========================================
+    // 4. إظهار/إخفاء كلمة المرور
+    // ==========================================
+    function setupPasswordToggle(button, input) {
+        button.addEventListener('click', () => {
+            const isPassword = input.getAttribute('type') === 'password';
+            input.setAttribute('type', isPassword ? 'text' : 'password');
+            button.textContent = isPassword ? t('btnHide') : t('btnShow');
+        });
+    }
+
+    setupPasswordToggle(togglePasswordBtn1, userPasswordInput);
+    setupPasswordToggle(togglePasswordBtn2, userConfirmPasswordInput);
+
+    // ==========================================
+    // 5. إنشاء الحساب (حقيقي فقط)
+    // ==========================================
+    p2pRegisterForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = userNameInput.value.trim();
+        const email = userEmailInput.value.trim();
+        const password = userPasswordInput.value.trim();
+        const confirmPassword = userConfirmPasswordInput.value.trim();
+
+        if (password !== confirmPassword) {
+            triggerToastNotification(t('errPasswordTitle'), t('errPasswordMatchMsg'), 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            triggerToastNotification(t('errWeakPasswordTitle'), t('errWeakPasswordMsg'), 'error');
+            return;
+        }
+
+        if (!humanVerificationCheckbox.checked) {
+            triggerToastNotification(t('errCaptchaTitle'), t('errCaptchaMsg'), 'error');
+            return;
+        }
+
+        // فحص الاتصال بـ Supabase بدل المحاكاة
+        if (!supabaseClient) {
+            triggerToastNotification(t('errRegistrationTitle'), t('errServiceUnavailableMsg'), 'error');
+            return;
+        }
+
+        submitRegisterButton.disabled = true;
+        submitRegisterButton.textContent = t('submitRegisterBtnLoading');
+
+        try {
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        full_name: fullName
+                    }
+                }
+            });
+
+            if (error) {
+                if (error.message.includes('User already registered')) {
+                throw new Error(t('errUserAlreadyRegistered'));
+                } else {
+                    throw new Error(error.message);
+                }
+            }
+
+            triggerToastNotification(t('successCreateTitle'), t('successCreateMsgSupabase'), 'success');
+
+            // توجيه إلى صفحة تأكيد البريد الإلكتروني (code.html) بدل market.html
+            setTimeout(() => {
+                window.location.href = 'code.html?email=' + encodeURIComponent(email);
+            }, 2000);
+
+        } catch (err) {
+            triggerToastNotification(t('errRegistrationTitle'), err.message, 'error');
+        } finally {
+            submitRegisterButton.disabled = false;
+            submitRegisterButton.textContent = t('submitRegisterBtn');
+        }
+    });
+
+    // ==========================================
+    // 6. الاستماع لتغيير اللغة من النظام المركزي
+    //    (الآلية الرسمية الوحيدة)
+    // ==========================================
+    document.addEventListener('zal:languageChanged', () => {
+        if (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function') {
+            currentLang = window.ZALLanguage.getLanguage();
+        }
+        // إعادة ترجمة أزرار إظهار/إخفاء كلمة المرور
+        [ { btn: togglePasswordBtn1, inp: userPasswordInput }, { btn: togglePasswordBtn2, inp: userConfirmPasswordInput } ].forEach(item => {
+            if (item.btn && item.inp) {
+                const isPassword = item.inp.getAttribute('type') === 'password';
+                item.btn.textContent = isPassword ? t('btnHide') : t('btnShow');
+            }
+        });
+        // استعادة نص زر التسجيل إن كان معطلاً/محمّلاً
+        if (submitRegisterButton && !submitRegisterButton.disabled) {
+            submitRegisterButton.textContent = t('submitRegisterBtn');
+        }
+    });
+
+    // التهيئة الأولية: لا نطبّق أي شيء، النظام المركزي يتولى ذلك عبر init
+    // نحتاج فقط إلى ضبط currentLang من النظام المركزي
+    if (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function') {
+        currentLang = window.ZALLanguage.getLanguage();
+    }
+</script>
+</body>
+</html>

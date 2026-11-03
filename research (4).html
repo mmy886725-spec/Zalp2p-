@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title data-i18n="research.page_title">منصة ZAL - البحث عن إعلان</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="language.js"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+        body { background:#f0f6ff; color:#1e3a8a; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+
+        .header { width:100%; max-width:550px; background:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #dbeafe; position:sticky; top:0; z-index:100; }
+        .brand { display:flex; align-items:center; gap:10px; }
+        .logo { width:40px; height:40px; background:#2563eb; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:14px; }
+        .brand-name { font-size:18px; font-weight:700; }
+        .hamburger { background:none; border:none; cursor:pointer; display:flex; flex-direction:column; gap:5px; padding:6px; border-radius:8px; }
+        .hamburger:hover { background:#eff6ff; }
+        .hamburger span { width:22px; height:2.5px; background:#2563eb; border-radius:2px; }
+
+        .overlay { position:fixed; inset:0; background:rgba(30,58,138,0.4); opacity:0; visibility:hidden; transition:all .3s; z-index:998; }
+        .overlay.active { opacity:1; visibility:visible; }
+        .drawer { position:fixed; top:0; right:-280px; width:280px; height:100%; background:#fff; box-shadow:-5px 0 25px rgba(30,58,138,.15); z-index:999; transition:right .3s; padding:24px 20px; display:flex; flex-direction:column; }
+        .drawer.open { right:0; }
+        .drawer-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; border-bottom:1px solid #e0e7ff; margin-bottom:20px; }
+        .drawer-header h3 { font-size:16px; }
+        .close-btn { background:none; border:none; font-size:20px; color:#2563eb; cursor:pointer; padding:4px 8px; }
+        .close-btn:hover { background:#eff6ff; border-radius:8px; }
+        .profile-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background:#f0f6ff; border:1px solid #dbeafe; border-radius:16px; margin-bottom:20px; }
+        .profile-card img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #2563eb; background:#fff; }
+        .profile-card .name { font-size:14px; font-weight:700; color:#1e3a8a; }
+        .profile-card .email { font-size:11px; color:#64748b; }
+        .menu { list-style:none; display:flex; flex-direction:column; gap:8px; flex:1; }
+        .menu a { display:flex; align-items:center; gap:12px; padding:12px 14px; color:#1e3a8a; text-decoration:none; font-size:14px; font-weight:600; border-radius:10px; transition:.2s; }
+        .menu a:hover { background:#eff6ff; color:#2563eb; }
+        .menu a.active { background:#dbeafe; color:#2563eb; }
+        .menu .logout { color:#dc2626; margin-top:auto; cursor:pointer; }
+        .menu .logout:hover { background:#fef2f2; }
+
+        .container { width:100%; max-width:550px; padding:20px; flex:1; }
+        .card { background:#fff; border-radius:20px; padding:22px; box-shadow:0 10px 30px rgba(37,99,235,.08); border:1px solid #dbeafe; margin-bottom:24px; }
+        .card h2 { font-size:18px; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+
+        .type-group { display:flex; background:#f0f6ff; padding:4px; border-radius:12px; margin-bottom:18px; border:1px solid #bfdbfe; }
+        .type-group button { flex:1; padding:10px; border:none; border-radius:8px; background:none; color:#1e3a8a; font-size:14px; font-weight:700; cursor:pointer; transition:.2s; }
+        .type-group .buy.active { background:#2563eb; color:#fff; box-shadow:0 2px 8px rgba(37,99,235,.2); }
+        .type-group .sell.active { background:#1e3a8a; color:#fff; box-shadow:0 2px 8px rgba(30,58,138,.2); }
+
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        @media(max-width:480px){ .grid{grid-template-columns:1fr} }
+        .field { display:flex; flex-direction:column; gap:6px; }
+        .field label { font-size:12px; font-weight:700; }
+        .field input, .field .trigger { width:100%; padding:11px 12px; border:1.5px solid #bfdbfe; border-radius:10px; font-size:13px; background:#f8fafc; color:#1e3a8a; outline:none; transition:.2s; }
+        .field input:focus, .field .trigger:hover { border-color:#2563eb; background:#fff; }
+        .field .trigger { cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:600; }
+        .field .trigger::after { content:'▼'; font-size:10px; color:#2563eb; }
+
+        .btn-submit { width:100%; margin-top:18px; padding:12px; background:#2563eb; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; transition:.2s; box-shadow:0 4px 12px rgba(37,99,235,.2); }
+        .btn-submit:hover { background:#1d4ed8; }
+
+        .results-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-weight:700; }
+        .badge { background:#dbeafe; color:#2563eb; padding:4px 10px; border-radius:20px; font-size:12px; }
+
+        .result-item { background:#fff; border-radius:14px; padding:16px; border:1px solid #dbeafe; margin-bottom:12px; display:flex; flex-direction:column; gap:10px; transition:.2s; }
+        .result-item:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(37,99,235,.08); }
+        .result-item.inactive { opacity:0.5; pointer-events:none; }
+        .result-top { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #eff6ff; padding-bottom:8px; }
+        .merchant { display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; }
+        .merchant .avatar { width:28px; height:28px; background:#2563eb; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; }
+        .tag { padding:3px 8px; border-radius:6px; font-size:11px; font-weight:700; }
+        .tag.buy { background:#eff6ff; color:#2563eb; }
+        .tag.sell { background:#f0fdf4; color:#16a34a; }
+        .result-details { display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; }
+        .result-details .label { font-size:10px; color:#64748b; }
+        .result-details .value { font-weight:700; }
+        .result-bottom { display:flex; justify-content:space-between; align-items:center; margin-top:4px; flex-wrap:wrap; gap:8px; }
+        .price { font-size:16px; font-weight:800; color:#2563eb; }
+        .btn-exec { padding:8px 16px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; transition:.2s; }
+        .btn-exec:hover { background:#1d4ed8; }
+        .btn-exec.inactive { background:#94a3b8; cursor:not-allowed; }
+        .empty { text-align:center; padding:35px 20px; background:#fff; border-radius:14px; border:1px dashed #bfdbfe; color:#3b82f6; }
+        .status-badge { font-size:11px; padding:2px 10px; border-radius:12px; background:#fef3c7; color:#92400e; }
+        .status-badge.completed { background:#d1fae5; color:#065f46; }
+
+        .modal { position:fixed; inset:0; background:rgba(15,23,42,0.5); backdrop-filter:blur(4px); opacity:0; visibility:hidden; transition:.25s; z-index:1000; display:flex; align-items:flex-end; justify-content:center; }
+        @media(min-width:550px){ .modal{ align-items:center; } }
+        .modal.active { opacity:1; visibility:visible; }
+        .modal-box { width:100%; max-width:500px; max-height:85vh; background:#fff; border-radius:24px 24px 0 0; padding:20px; display:flex; flex-direction:column; transform:translateY(100%); transition:transform .3s; }
+        @media(min-width:550px){ .modal-box{ border-radius:20px; transform:translateY(20px); } }
+        .modal.active .modal-box { transform:translateY(0); }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid #e0e7ff; margin-bottom:14px; }
+        .modal-header h4 { font-size:16px; }
+        .modal-close { background:#f1f5f9; border:none; width:30px; height:30px; border-radius:50%; font-size:14px; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .modal-close:hover { background:#e2e8f0; }
+        .modal-search { width:100%; padding:10px 14px; border:1.5px solid #bfdbfe; border-radius:10px; font-size:13px; outline:none; background:#f8fafc; margin-bottom:14px; }
+        .modal-search:focus { border-color:#2563eb; background:#fff; }
+        .modal-options { overflow-y:auto; max-height:50vh; display:flex; flex-direction:column; gap:6px; }
+        .modal-options .group { font-size:12px; font-weight:800; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:8px; margin-top:8px; }
+        .modal-options .option { padding:12px 14px; border-radius:10px; font-size:13px; font-weight:600; color:#1e3a8a; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:.15s; border:1px solid transparent; }
+        .modal-options .option:hover, .modal-options .option.sel { background:#f0f6ff; color:#2563eb; border-color:#bfdbfe; }
+        .modal-options .option.sel::after { content:'✓'; font-weight:800; color:#2563eb; }
+
+        .amount-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1500;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .amount-modal.open { display: flex; }
+        .amount-modal .modal-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .amount-modal .modal-card h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #1e3a8a;
+        }
+        .amount-modal .modal-card .sub {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .amount-modal .modal-card .ad-summary {
+            background: #f0f6ff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+            font-size: 13px;
+        }
+        .amount-modal .modal-card .ad-summary .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #dbeafe;
+        }
+        .amount-modal .modal-card .ad-summary .item .lbl { color: #64748b; font-size: 12px; }
+        .amount-modal .modal-card .ad-summary .item .val { font-weight: 700; color: #1e3a8a; }
+        .amount-modal .modal-card input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #bfdbfe;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 6px;
+        }
+        .amount-modal .modal-card input[type="number"]:focus { border-color: #2563eb; }
+        .amount-modal .modal-card .range-info {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        .amount-modal .modal-card .btn-confirm {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .amount-modal .modal-card .btn-confirm:hover { background: #1d4ed8; }
+        .amount-modal .modal-card .btn-confirm:disabled { background: #94a3b8; cursor: not-allowed; }
+        .amount-modal .modal-card .error-text {
+            color: #dc2626;
+            font-size: 13px;
+            margin: 8px 0;
+            display: none;
+        }
+        .amount-modal .modal-card .error-text.show { display: block; }
+    </style>
+</head><body>
+
+<header class="header">
+    <div class="brand"><div class="logo">ZAL</div><span class="brand-name" data-i18n="brandName">منصة ZAL</span></div>
+    <button class="hamburger" id="openDrawer" data-i18n-aria-label="openMenuAria" aria-label="فتح القائمة"><span></span><span></span><span></span></button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<nav class="drawer" id="drawer">
+    <div class="drawer-header"><h3 data-i18n="drawer.title">خيارات الحساب</h3><button class="close-btn" id="closeDrawer" data-i18n-aria-label="closeAria" aria-label="إغلاق">✕</button></div>
+    <div class="profile-card">
+        <img id="avatar" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%232563eb'/%3E%3Ctext x='24' y='30' font-size='20' fill='white' text-anchor='middle' font-family='sans-serif'%3E%3F%3C/text%3E%3C/svg%3E" alt="صورة" data-i18n-alt="userAvatarAlt">
+        <div><div class="name" id="userName">—</div><div class="email" id="userEmail">—</div></div>
+    </div>
+    <ul class="menu">
+        <li><a href="balance.html"> <span data-i18n="drawer.balance">الرصيد</span></a></li>
+        <li><a href="post.html">
+ <span data-i18n="drawer.postAd">نشر إعلان</span></a></li>
+        <li><a href="research.html" class="active">
+         <span data-i18n="drawer.searchAds">البحث عن إعلان</span></a></li>
+        <li><a href="orders.html" id="completedOrdersLink"
+><span data-i18n="drawer.orders">الطلبات المكتملة والمنشورة</span></a></li>
+        <li><a href="bot.html">
+ <span data-i18n="drawer.editProfile">بوت تليجرام</span></a></li>
+        <li><a href="settings.html">
+            <span data-i18n="drawer.settings">الإعدادات</span></a></li>
+        <li><a href="index.html" class="logout">
+        <span data-i18n="drawer.logout">تسجيل الخروج</span></a></li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="card">
+        <h2>🔍 <span data-i18n="research.title">البحث والتصفية المتقدمة</span></h2>
+        <input type="text" id="liveSearch" style="margin-bottom:16px;padding:11px 12px;border:1.5px solid #bfdbfe;border-radius:10px;font-size:13px;background:#f8fafc;width:100%;outline:none;" data-i18n-placeholder="research.live_search_placeholder" placeholder="ابحث فورياً في العروض...">
+
+        <div class="type-group">
+            <button class="buy active" id="btnBuy" data-i18n="research.buy_zal">شراء ZAL</button>
+            <button class="sell" id="btnSell" data-i18n="research.sell_zal">بيع ZAL</button>
+        </div>
+
+        <form id="searchForm">
+            <div class="grid">
+                <div class="field"><label data-i18n="research.rate_label">سعر الصرف المستهدف</label><input type="number" step="0.01" id="rateFilter" data-i18n-placeholder="research.rate_placeholder" placeholder="مثال: 1.1"></div>
+                <div class="field"><label data-i18n="research.amount_label">المبلغ</label><input type="number" id="amountFilter" data-i18n-placeholder="research.amount_placeholder" placeholder="مثال: 100"></div>
+                <div class="field"><label data-i18n="research.currency_label">العملة المحليّة</label><button type="button" class="trigger" id="currTrigger"><span id="currLabel" data-i18n="research.all_currencies">🌐 جميع العملات</span></button><input type="hidden" id="currVal" value="ALL"></div>
+                <div class="field"><label data-i18n="research.payment_label">طريقة الدفع</label><button type="button" class="trigger" id="payTrigger"><span id="payLabel" data-i18n="research.all_payments">💳 جميع طرق الدفع</span></button><input type="hidden" id="payVal" value="ALL"></div>
+            </div>
+            <button type="submit" class="btn-submit" data-i18n="research.apply_filter">تطبيق التصفية</button>
+        </form>
+    </div>
+
+    <div class="results-header"><span data-i18n="research.results_header">النتائج المتاحة</span><span class="badge" id="count">0 <span data-i18n="research.ad_count_unit">إعلان</span></span></div>
+    <div id="results"><div class="empty" data-i18n="research.loading_ads">جاري تحميل الإعلانات...</div></div>
+</main>
+
+<div class="amount-modal" id="amountModal">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin: 0;" data-i18n="amount_modal.title">💰 تحديد المبلغ</h3>
+            <button id="closeAmountModalBtn" data-i18n-aria-label="closeAria" aria-label="إغلاق" style="background: #f1f5f9; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+        </div>
+        <p class="sub" data-i18n="amount_modal.sub">أدخل المبلغ الذي تريد تداوله</p>
+
+        <div class="ad-summary" id="adSummary">
+            <div class="item"><span class="lbl" data-i18n="amount_modal.merchant">التاجر</span><span class="val" id="amMerchant">-</span></div>
+            <div class="item"><span class="lbl" data-i18n="amount_modal.type">النوع</span><span class="val" id="amType">-</span></div>
+            <div class="item"><span class="lbl" data-i18n="amount_modal.rate">سعر الصرف</span><span class="val" id="amRate">-</span></div>
+            <div class="item"><span class="lbl" data-i18n="amount_modal.currency">العملة</span><span class="val" id="amCurrency">-</span></div>
+            <div class="item"><span class="lbl" data-i18n="amount_modal.payment">طريقة الدفع</span><span class="val" id="amPayment">-</span></div>
+            <div class="item"><span class="lbl" data-i18n="amount_modal.amount_range">مدى المبلغ</span><span class="val" id="amAmount">-</span></div>
+        </div>
+
+        <input type="number" id="amountInput" data-i18n-placeholder="amount_modal.amount_placeholder" placeholder="أدخل المبلغ..." step="any" min="0">
+        <div id="calcResult" style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #2563eb;" data-i18n="amount_modal.calc_zero">المبلغ المستلم: 0</div>
+        <div class="range-info" id="rangeInfo" data-i18n="amount_modal.range_zero">المتاح: 0 - 0 ZAL</div>
+        <div class="error-text" id="amountError" data-i18n="amount_modal.error_invalid">⚠️ المبلغ غير صحيح</div>
+        <button class="btn-confirm" id="confirmAmount" disabled data-i18n="amount_modal.confirm">تأكيد وبدء المحادثة</button>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-box">
+        <div class="modal-header"><h4 id="modalTitle" data-i18n="modal.title_default">اختر من القائمة</h4><button class="modal-close" id="modalClose" data-i18n-aria-label="closeAria" aria-label="إغلاق">✕</button></div>
+        <input type="text" class="modal-search" id="modalSearch" data-i18n-placeholder="modal.search_placeholder" placeholder="🔍 ابحث...">
+        <div class="modal-options" id="modalOptions"></div>
+    </div>
+</div><script>
+const supabaseClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : null;
+
+let ads = [];
+let selectedType = 'buy';
+let currentUser = null;
+let modalData = [];
+let modalCurrentVal = '';
+let modalLabelId = '';
+let modalValId = '';
+let activeAd = null;
+function tr(key) {
+    return (typeof window.translateKey === 'function') ? window.translateKey(key) : key;
+}
+function $(id){ return document.getElementById(id); }
+
+// [ZAL] دالة جسر تعتمد كلياً على النظام المركزي (language.js) لقراءة الترجمات
+function t(key, vars) {
+    try {
+        const lang = (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function')
+            ? window.ZALLanguage.getLanguage()
+            : 'ar';
+        const dict = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function')
+            ? window.ZALLanguage.getTranslations()
+            : (window.ZAL_TRANSLATIONS && window.ZAL_TRANSLATIONS[lang]) || {};
+        
+        const value = key && key.split('.').reduce(
+            (obj, part) => (obj && obj[part] !== undefined) ? obj[part] : undefined,
+            dict
+        );
+        
+        let out = (typeof value === 'string') ? value : key;
+        
+        // [إصلاح] إذا لم يوجد المفتاح في القاموس، نبحث عن نصه الحالي في الصفحة (الذي ترجمه النظام المركزي)
+        if (out === key) {
+            const el = document.querySelector(`[data-i18n="${key}"]`);
+            if (el && el.textContent.trim() !== '') {
+                out = el.textContent.trim();
+            }
+        }
+
+        if (vars && typeof out === 'string') {
+            out = out.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+        }
+        return out;
+    } catch (e) {
+        return key;
+    }
+}
+
+// [ZAL] ترجمة عناصر data-i18n-alt (النظام المركزي لا يعالجها)
+function applyAltTranslations() {
+    try {
+        const dict = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function')
+            ? window.ZALLanguage.getTranslations()
+            : {};
+        document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+            const key = el.getAttribute('data-i18n-alt');
+            if (!key) return;
+            const value = key.split('.').reduce(
+                (obj, part) => (obj && obj[part] !== undefined) ? obj[part] : undefined,
+                dict
+            );
+            if (typeof value === 'string') el.setAttribute('alt', value);
+        });
+    } catch (e) {}
+}
+document.addEventListener('zal:languageChanged', applyAltTranslations);
+
+// [ZAL] بناء قوائم العملات وطرق الدفع من مفاتيح en.js الموجودة فعلاً
+function buildCurrencies() {
+    return [
+        { val:'ALL', key:'research.all_currencies', groupKey:'research.all_currencies' },
+        { val:'USD', key:'currency_usd', groupKey:'groupIntlCurrencies' },
+        { val:'EUR', key:'currency_eur', groupKey:'groupIntlCurrencies' },
+        { val:'IQD', key:'currency_iqd', groupKey:'groupMidEastCurrencies' },
+        { val:'SAR', key:'currency_sar', groupKey:'groupMidEastCurrencies' },
+        { val:'AED', key:'currency_aed', groupKey:'groupMidEastCurrencies' },
+        { val:'EGP', key:'currency_egp', groupKey:'groupMidEastCurrencies' },
+        { val:'JOD', key:'currency_jod', groupKey:'groupMidEastCurrencies' },
+        { val:'KWD', key:'currency_kwd', groupKey:'groupMidEastCurrencies' },
+        { val:'QAR', key:'currency_qar', groupKey:'groupMidEastCurrencies' },
+        { val:'TRY', key:'currency_try', groupKey:'groupMidEastCurrencies' },
+        { val:'DZD', key:'currency_dzd', groupKey:'groupNorthAfricaCurrencies' },
+        { val:'MAD', key:'currency_mad', groupKey:'groupNorthAfricaCurrencies' }
+    ].map(c => ({ val: c.val, label: t(c.key), group: t(c.groupKey) }));
+}
+
+function buildPayments() {
+    return [
+        { val:'ALL', key:'research.all_payments', groupKey:'research.all_payments' },
+        { val:'Wise', key:'payment_Wise', groupKey:'groupIntlBanks' },
+        { val:'Payeer', key:'payment_Payeer', groupKey:'groupIntlBanks' },
+        { val:'Perfect Money', key:'payment_PerfectMoney', groupKey:'groupIntlBanks' },
+        { val:'PayPal', key:'payment_PayPal', groupKey:'groupIntlBanks' },
+        { val:'Crypto', key:'payment_Crypto', groupKey:'groupIntlBanks' },
+        { val:'ZainCash', key:'payment_ZainCash', groupKey:'groupLocalWallets' },
+        { val:'VodafoneCash', key:'payment_VodafoneCash', groupKey:'groupLocalWallets' },
+        { val:'STCPay', key:'payment_STCPay', groupKey:'groupLocalWallets' },
+        { val:'InstaPay', key:'payment_InstaPay', groupKey:'groupLocalWallets' },
+        { val:'BaridiMob', key:'payment_BaridiMob', groupKey:'groupLocalWallets' },
+        { val:'CCP', key:'payment_CCP', groupKey:'groupLocalWallets' },
+        { val:'BankTransfer', key:'payment_BankTransfer', groupKey:'groupLocalWallets' }
+    ].map(p => ({ val: p.val, label: t(p.key), group: t(p.groupKey) }));
+}
+
+let currencies = buildCurrencies();
+let payments = buildPayments();
+
+function closeModal() { $('modal').classList.remove('active'); }
+
+function renderModalOptions(filter) {
+    const options = $('modalOptions');
+    const filtered = modalData.filter(item => 
+        item.label.includes(filter) || item.group.includes(filter)
+    );
+    if(!filtered.length) {
+        options.innerHTML = `<div style="padding:20px;color:#64748b;text-align:center;">${t('modal.no_options')}</div>`;
+        return;
+    }
+    let html = '';
+    const groups = {};
+    filtered.forEach(item => { 
+        if(!groups[item.group]) groups[item.group] = []; 
+        groups[item.group].push(item); 
+    });
+    for(const g in groups) {
+        html += `<div class="group">${g}</div>`;
+        groups[g].forEach(item => {
+            const selected = item.val === modalCurrentVal ? ' sel' : '';
+            html += `<div class="option${selected}" data-val="${item.val}" data-label="${item.label}">${item.label}</div>`;
+        });
+    }
+    options.innerHTML = html;
+    options.querySelectorAll('.option').forEach(el => {
+        el.onclick = function() {
+            $(modalLabelId).textContent = this.dataset.label;
+            $(modalValId).value = this.dataset.val;
+            closeModal();
+        };
+    });
+}
+
+function openModal(type) {
+    if(type === 'currency') {
+        modalData = currencies;
+        modalCurrentVal = $('currVal').value;
+        modalLabelId = 'currLabel';
+        modalValId = 'currVal';
+        $('modalTitle').textContent = t('modal.choose_currency');
+    } else {
+        modalData = payments;
+        modalCurrentVal = $('payVal').value;
+        modalLabelId = 'payLabel';
+        modalValId = 'payVal';
+        $('modalTitle').textContent = t('modal.choose_payment');
+    }
+    $('modal').classList.add('active');
+    $('modalSearch').value = '';
+    renderModalOptions('');
+}
+
+// [ZAL] إعادة بناء قوائم العملات/الدفع عند تغيير اللغة، وتحديث الليبل المعروض
+document.addEventListener('zal:languageChanged', () => {
+    setTimeout(() => {
+        currencies = buildCurrencies();
+        payments = buildPayments();
+
+        // تحديث ليبل العملة المختارة
+        const currVal = $('currVal') ? $('currVal').value : 'ALL';
+        const currItem = currencies.find(c => c.val === currVal);
+        if (currItem && $('currLabel')) {
+            $('currLabel').textContent = currItem.label;
+        }
+
+        // تحديث ليبل طريقة الدفع المختارة
+        const payVal = $('payVal') ? $('payVal').value : 'ALL';
+        const payItem = payments.find(p => p.val === payVal);
+        if (payItem && $('payLabel')) {
+            $('payLabel').textContent = payItem.label;
+        }
+
+        // إعادة بناء قائمة الـ modal إن كانت مفتوحة
+        if ($('modal') && $('modal').classList.contains('active') && modalData.length) {
+            if (modalLabelId === 'currLabel') {
+                modalData = currencies;
+                $('modalTitle').textContent = t('modal.choose_currency');
+            } else {
+                modalData = payments;
+                $('modalTitle').textContent = t('modal.choose_payment');
+            }
+            renderModalOptions($('modalSearch').value.trim());
+        }
+
+        // إعادة عرض الإعلانات لترجمة النصوص الديناميكية
+        if (typeof renderAds === 'function' && ads.length) {
+            renderAds($('liveSearch') ? $('liveSearch').value.trim() : '');
+        }
+    }, 50); // تأخير بسيط لضمان أن النظام المركزي قد طبق الترجمات على الصفحة أولاً
+});
+
+$('closeAmountModalBtn').onclick = function() {
+    $('amountModal').classList.remove('open');
+};
+
+$('currTrigger').onclick = function() { openModal('currency'); };
+$('payTrigger').onclick = function() { openModal('payment'); };
+$('modalClose').onclick = closeModal;
+$('modal').onclick = function(e) { if(e.target === $('modal')) closeModal(); };
+$('modalSearch').oninput = function(e) { renderModalOptions(e.target.value.trim()); };
+
+$('openDrawer').onclick = function() { 
+    $('drawer').classList.add('open');$('overlay').classList.add('active'); 
+};
+$('closeDrawer').onclick = function() { 
+    $('drawer').classList.remove('open');$('overlay').classList.remove('active'); 
+};
+$('overlay').onclick = function() { 
+    $('drawer').classList.remove('open');$('overlay').classList.remove('active'); 
+};
+
+$('btnBuy').onclick = function() { 
+    selectedType = 'buy'; 
+    this.className = 'buy active'; 
+    $('btnSell').className = 'sell'; 
+    renderAds($('liveSearch').value.trim());
+};
+$('btnSell').onclick = function() { 
+    selectedType = 'sell'; 
+    this.className = 'sell active'; 
+    $('btnBuy').className = 'buy'; 
+    renderAds($('liveSearch').value.trim());
+};
+
+async function loadUserProfile() {
+    if (!supabaseClient) {
+        $('userName').textContent = '—';
+        $('userEmail').textContent = '—';
+        return;
+    }
+    try {
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error || !user) return;
+        currentUser = user;
+        $('userEmail').textContent = user.email || '—';
+
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile) {
+            $('userName').textContent = profile.full_name || (user.email ? user.email.split('@')[0] : t('zalUser'));
+            if (profile.avatar_url && profile.avatar_url.trim() !== '') {
+                $('avatar').src = profile.avatar_url;
+            }
+        } else {
+            $('userName').textContent = user.email ? user.email.split('@')[0] : t('zalUser');
+        }
+    } catch (err) {
+        console.warn('Profile load failed:', err);
+    }
+}
+
+// جلب الإعلانات مع بيانات أصحابها (merchant = profiles.full_name)
+async function loadAds() {
+    if (!supabaseClient) {
+        $('results').innerHTML = `<div class="empty">${t('research.service_unavailable')}</div>`;
+        return;
+    }
+    try {
+        const { data, error } = await supabaseClient
+            .from('ads')
+            .select('id, user_id, type, status, amount, min_amount, rate, currency, payment_method, created_at, profiles:user_id(full_name, avatar_url)')
+            .neq('status', 'completed')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // إثراء كل إعلان بحقل merchant من profiles
+        ads = (data || []).map(a => ({
+            ...a,
+            merchant: (a.profiles && a.profiles.full_name) ? a.profiles.full_name : t('chatMerchantNameDefault'),
+            merchant_avatar: (a.profiles && a.profiles.avatar_url) ? a.profiles.avatar_url : null
+        }));
+
+        renderAds($('liveSearch').value.trim());
+    } catch (err) {
+        console.error('Load ads failed:', err);
+        $('results').innerHTML = `<div class="empty">${t('research.load_failed')}</div>`;
+    }
+}
+
+function renderAds(filterText = '') {
+    const container = $('results');
+    
+    let filteredAds = ads.filter(a => a.type === selectedType);
+    
+    if(filterText) {
+        const f = filterText.toLowerCase();
+        filteredAds = filteredAds.filter(a => 
+            (a.merchant || '').toLowerCase().includes(f) ||
+            (a.currency || '').toLowerCase().includes(f) || 
+            (a.payment_method || '').toLowerCase().includes(f)
+        );
+    }
+    
+    const rateFilter = parseFloat($('rateFilter').value);
+    if(rateFilter && rateFilter > 0) {
+        filteredAds = filteredAds.filter(a => Math.abs(Number(a.rate) - rateFilter) < 0.01);
+    }
+    
+    const amountFilter = parseFloat($('amountFilter').value);
+    if(amountFilter && amountFilter > 0) {
+        filteredAds = filteredAds.filter(a => Number(a.amount || 0) >= amountFilter);
+    }
+    
+    const currVal = $('currVal').value;
+    if(currVal !== 'ALL') {
+        filteredAds = filteredAds.filter(a => a.currency === currVal);
+    }
+    
+    const payVal = $('payVal').value;
+    if(payVal !== 'ALL') {
+        filteredAds = filteredAds.filter(a => a.payment_method === payVal);
+    }
+    
+   if(!filteredAds.length) {
+    container.innerHTML = `<div class="empty" data-i18n="research.no_results">${tr('research.no_results')}</div>`;
+    $('count').innerHTML = `0 <span data-i18n="research.ad_count_unit">${tr('research.ad_count_unit')}</span>`;
+    return;
+}
+    
+    let html = '';
+    filteredAds.forEach((ad) => {
+        const typeText = ad.type === 'buy' ? t('research.buy_zal') : t('research.sell_zal');
+        const tagClass = ad.type === 'buy' ? 'buy' : 'sell';
+        const isActive = ad.status !== 'in_trade' && ad.status !== 'completed';
+        const statusText = ad.status === 'in_trade' ? t('research.status_in_trade') : (ad.status === 'completed' ? t('research.status_completed') : t('research.status_available'));
+        const statusClass = ad.status === 'in_trade' ? 'status-badge' : (ad.status === 'completed' ? 'status-badge completed' : '');
+        const minAmt = Number(ad.min_amount) || 0;
+        const maxAmt = Number(ad.amount) || 0;
+        const merchantName = ad.merchant || t('chatMerchantNameDefault');
+        const avatarChar = merchantName.charAt(0) || 'ت';
+        const isOwnAd = currentUser && ad.user_id === currentUser.id;
+        
+        html += `
+            <div class="result-item ${!isActive ? 'inactive' : ''}">
+                <div class="result-top"><div class="merchant"><span class="avatar">${avatarChar}</span>${merchantName}${isOwnAd ? ` (${t('research.your_ad')})` : ''}</div>
+                    <span class="tag ${tagClass}">${typeText}</span>
+                </div>
+                <div class="result-details">
+                    <div><div class="label">${t('research.amount_label')}</div><div class="value">${minAmt} - ${maxAmt} ZAL</div></div>
+                    <div><div class="label">${t('research.rate_label_short')}</div><div class="value">${ad.rate}</div></div>
+                    <div><div class="label">${t('research.currency_label_short')}</div><div class="value">${ad.currency}</div></div>
+                    <div><div class="label">${t('research.payment_label_short')}</div><div class="value">${ad.payment_method}</div></div>
+                </div>
+                <div class="result-bottom">
+                    <span class="price">${minAmt} - ${maxAmt} ZAL</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span class="${statusClass}">${statusText}</span>
+                        <button class="btn-exec ${!isActive || isOwnAd ? 'inactive' : ''}" data-ad-id="${ad.id}" ${(!isActive || isOwnAd) ? 'disabled' : ''}>
+                            ${isActive && !isOwnAd ? t('research.start_chat') : (isOwnAd ? t('research.your_ad') : t('research.not_available'))}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    $('count').innerHTML = `${filteredAds.length} <span>${t('research.ad_count_unit')}</span>`;
+    
+    document.querySelectorAll('.btn-exec:not(.inactive)').forEach(btn => {
+        btn.onclick = function() {
+            const adId = this.dataset.adId;
+            const ad = ads.find(a => String(a.id) === String(adId));
+            if(ad) showAmountModal(ad);
+        };
+    });
+}
+
+function showAmountModal(ad) {
+    const modal = $('amountModal');
+    modal.classList.add('open');
+    activeAd = ad;
+    
+    $('amMerchant').textContent = ad.merchant || t('chatMerchantNameDefault');
+    $('amType').textContent = ad.type === 'buy' ? t('research.type_buy_short') : t('research.type_sell_short');
+    $('amRate').textContent = ad.rate;
+    $('amCurrency').textContent = ad.currency;
+    $('amPayment').textContent = ad.payment_method;
+    
+    const minAmount = Number(ad.min_amount) || 0;
+    const maxAmount = Number(ad.amount) || 0;
+    $('amAmount').textContent = `${minAmount} - ${maxAmount} ZAL`;
+    
+    $('amountInput').value = '';
+    $('amountInput').max = maxAmount;
+    $('amountInput').min = minAmount;
+    $('rangeInfo').textContent = t('amount_modal.range_info', { min: minAmount, max: maxAmount });
+    $('amountError').classList.remove('show');
+    $('confirmAmount').disabled = true;
+    $('calcResult').textContent = t('amount_modal.calc_zero');
+    
+    $('amountInput').oninput = function() {
+        const val = parseFloat(this.value);
+        const error = $('amountError');
+        const btn = $('confirmAmount');
+        const calcResultEl = $('calcResult');
+        
+        if(val && val > 0) {
+            const rate = parseFloat(ad.rate) || 1;
+            const receivedVal = ad.type === 'buy' ? (val * rate) : (val / rate);
+            calcResultEl.textContent = t('amount_modal.calc_result', { received: receivedVal.toFixed(2), currency: ad.currency, rate: ad.rate });
+        } else {
+            calcResultEl.textContent = t('amount_modal.calc_zero');
+        }
+        
+        if(!val || val <= 0) {
+            error.textContent = t('amount_modal.error_enter_amount');
+            error.classList.add('show');
+            btn.disabled = true;
+        } else if(val < minAmount) {
+            error.textContent = t('amount_modal.error_below_min', { min: minAmount });
+            error.classList.add('show');
+            btn.disabled = true;
+        } else if(val > maxAmount) {
+            error.textContent = t('amount_modal.error_above_max', { max: maxAmount });
+            error.classList.add('show');
+            btn.disabled = true;
+        } else {
+            error.classList.remove('show');
+            btn.disabled = false;
+        }
+    };
+    
+    $('confirmAmount').onclick = async function() {
+        const amount = parseFloat($('amountInput').value);
+        if(!activeAd || !currentUser) return;
+        const ad = activeAd;
+        
+        if(!(amount && amount >= minAmount && amount <= maxAmount)) return;
+
+        // استدعاء RPC لإنشاء الطلب — هذه الخطوة كانت مفقودة، وهي التي تنشئ صف orders حقيقي
+        try {
+            this.disabled = true;
+            this.textContent = t('amount_modal.creating_order');
+
+            const { data, error } = await supabaseClient.rpc('start_order_from_ad', {
+                p_ad_id: ad.id,
+                p_amount: amount
+            });
+
+            if (error) {
+                console.error('start_order_from_ad error:', error);
+                alert(t('amount_modal.error_create_order', { message: (error.message || error) }));
+                this.disabled = false;
+                this.textContent = t('amount_modal.confirm');
+                return;
+            }
+
+            if (!data || data.success !== true || !data.order_id) {
+                alert(t('amount_modal.error_order_not_created'));
+                this.disabled = false;
+                this.textContent = t('amount_modal.confirm');
+                return;
+            }
+
+            // الطلب أُنشئ بنجاح. الآن نحوّل إلى صفحة المحادثة الصحيحة حسب دور المستخدم.
+            // من ضغط على إعلان buy يصبح seller → chat-sell.html
+            // من ضغط على إعلان sell يصبح buyer → chat-buy.html
+            const chatFile = ad.type === 'buy' ? 'chat-sell.html' : 'chat-buy.html';
+            const role = ad.type === 'buy' ? 'seller' : 'buyer';
+            const receivedAmount = ad.type === 'buy'
+                ? (amount * (parseFloat(ad.rate) || 1))
+                : (amount / (parseFloat(ad.rate) || 1));
+
+            const params = new URLSearchParams({
+                orderId: String(data.order_id),
+                adId: String(ad.id),
+                role: role,
+                adType: ad.type,
+                merchant: ad.merchant || '',
+                amount: String(amount),
+                receivedAmount: String(receivedAmount),
+                rate: String(ad.rate || 1),
+                currency: ad.currency || 'USD',
+                payment: ad.payment_method || 'BankTransfer'
+            });
+            window.location.href = chatFile + '?' + params.toString();
+
+        } catch (err) {
+            console.error('Confirm amount exception:', err);
+            alert(t('amount_modal.error_unexpected', { message: err.message }));
+            this.disabled = false;
+            this.textContent = t('amount_modal.confirm');
+        }
+    };
+}
+
+$('searchForm').onsubmit = function(e) { 
+    e.preventDefault(); 
+    renderAds($('liveSearch').value.trim()); 
+};
+
+$('liveSearch').oninput = function(e) { 
+    renderAds(this.value.trim()); 
+};
+
+$('completedOrdersLink').onclick = function(e) {
+    e.preventDefault();
+    window.location.herr = 'orders.html';
+};
+
+document.querySelector('.logout').onclick = async function(e) {
+    e.preventDefault();
+    if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch(_) {}
+    }
+    window.location.href = 'index.html';
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadUserProfile();
+    await loadAds();
+    
+    // [إصلاح] بمجرد أن يطبق النظام المركزي الترجمات الأولية، نعيد بناء القوائم لضمان الترجمة
+    setTimeout(() => {
+        currencies = buildCurrencies();
+        payments = buildPayments();
+        const currItem = currencies.find(c => c.val === $('currVal').value);
+        if (currItem) $('currLabel').textContent = currItem.label;
+        const payItem = payments.find(p => p.val === $('payVal').value);
+        if (payItem) $('payLabel').textContent = payItem.label;
+        renderAds($('liveSearch').value.trim());
+    }, 100);
+});
+</script>
+</body>
+</html>

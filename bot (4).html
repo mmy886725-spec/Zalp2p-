@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="telegram.pageTitle">إشعارات Telegram</title>
+    <script src="language.js"></script>
+    <script src="supabase-config.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;padding:20px 16px;}
+.wrap{max-width:560px;width:100%;background:#fff;border-radius:28px;padding:24px 20px 28px;border:1px solid #dbeafe;}
+.head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.head h1{font-size:20px;display:flex;align-items:center;gap:8px;}
+.head p{font-size:14px;color:#475569;margin-top:2px;}
+.back{background:#f1f5f9;border:1px solid #e2e8f0;padding:6px 14px;border-radius:40px;font-weight:600;font-size:13px;cursor:pointer;}
+.load{display:flex;align-items:center;gap:12px;justify-content:center;padding:40px 0;font-weight:600;color:#2563eb;}
+.spin{width:26px;height:26px;border:3px solid #dbeafe;border-top:3px solid #2563eb;border-radius:50%;animation:s .8s linear infinite;}
+@keyframes s{to{transform:rotate(360deg)}}
+.card{background:#fafcff;border:1px solid #e0e7ff;border-radius:18px;padding:18px;margin-bottom:18px;}
+.c-top{display:flex;justify-content:space-between;align-items:center;}
+.c-top h2{display:flex;align-items:center;gap:10px;font-size:17px;}
+.badge{padding:3px 14px;border-radius:40px;font-size:13px;font-weight:700;}
+.badge.no{background:#fee2e2;color:#b91c1c;}
+.badge.ok{background:#dcfce7;color:#15803d;}
+.badge.wait{background:#dbeafe;color:#2563eb;}
+.desc{color:#475569;font-size:14px;margin:8px 0 14px;}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;}
+.date{font-size:13px;color:#64748b;}
+.btn{font-weight:700;font-size:14px;padding:10px 24px;border-radius:60px;border:none;cursor:pointer;}
+.btn-p{background:#2563eb;color:#fff;}
+.btn-p:hover{background:#1d4ed8;}
+.btn-d{background:#ef4444;color:#fff;}
+.btn-d:hover{background:#dc2626;}
+.btn-o{background:transparent;border:1.5px solid #bfdbfe;color:#1e3a8a;}
+.btn:disabled{opacity:.6;pointer-events:none;}
+.notif h3{font-size:17px;display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+.notif .sub{color:#64748b;font-size:14px;margin-bottom:14px;}
+.item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.item:last-child{border-bottom:0;}
+.item .ic{font-size:20px;width:32px;text-align:center;}
+.item .inf{flex:1;}
+.item .inf .lbl{font-weight:700;font-size:14px;color:#0b2b5a;}
+.item .inf .dsc{font-size:12px;color:#64748b;}
+.sw{position:relative;width:42px;height:22px;flex-shrink:0;background:#cbd5e1;border-radius:40px;border:none;padding:0;cursor:pointer;transition:.2s;}
+.sw.on{background:#2563eb;}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;}
+.sw.on::after{transform:translateX(20px);}
+.foot{font-size:12px;color:#94a3b8;text-align:center;margin-top:14px;}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;opacity:0;visibility:hidden;transition:.25s;}
+.modal.on{opacity:1;visibility:visible;}
+.m-box{background:#fff;max-width:400px;width:100%;border-radius:24px;padding:24px 22px;transform:translateY(16px) scale(.96);transition:.25s;}
+.modal.on .m-box{transform:translateY(0) scale(1);}
+.m-box h4{font-size:19px;margin-bottom:4px;}
+.m-box p{color:#475569;font-size:14px;margin:4px 0 16px;}
+.acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;}
+.acts .btn{min-width:90px;justify-content:center;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:1000;opacity:0;transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+@media(max-width:480px){.wrap{padding:16px;}.btn{width:100%;justify-content:center;}.row{flex-direction:column;align-items:stretch;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="head">
+<div><h1 data-i18n="telegram.headerTitle">📨 إشعارات Telegram</h1><p data-i18n="telegram.headerSubtitle">اربط حسابك لتلقي إشعارات المعاملات.</p></div>
+<button class="back" data-i18n="telegram.backButton" onclick="window.location.href='research.html'">↩ رجوع</button></div>
+
+<div id="load" class="load"><div class="spin"></div><span data-i18n="telegram.loadingSettings">جاري تحميل الإعدادات...</span></div>
+
+<div id="main" style="display:none">
+<div class="card">
+<div class="c-top">
+<h2>✈️ <span data-i18n="telegram.brand">Telegram</span></h2>
+<span class="badge no" id="badge" data-i18n="telegram.status.disconnected">غير مرتبط</span>
+</div>
+<div class="desc" id="desc" data-i18n="telegram.descriptions.disconnected">اربط Telegram لتلقي الإشعارات.</div>
+<div class="row">
+<span class="date" id="date"></span>
+<div id="actions"></div>
+</div>
+</div>
+
+<div class="card notif">
+<h3 data-i18n="telegram.sections.notificationsTitle">🔔 إشعارات المعاملات</h3>
+<div class="sub" data-i18n="telegram.sections.notificationsSubtitle">اختر الإشعارات التي تريد استلامها.</div>
+<div class="item">
+<span class="ic">🔔</span>
+<div class="inf">
+<div class="lbl" data-i18n="telegram.items.newTradeLabel">معاملة جديدة</div>
+<div class="dsc" data-i18n="telegram.items.newTradeDesc">عند بدء معاملة جديدة.</div>
+</div>
+<button class="sw" id="s1" data-key="new"></button>
+</div>
+<div class="item">
+<span class="ic">✅</span>
+<div class="inf">
+<div class="lbl" data-i18n="telegram.items.completeTradeLabel">إكمال المعاملة</div>
+<div class="dsc" data-i18n="telegram.items.completeTradeDesc">عند اكتمال المعاملة.</div>
+</div>
+<button class="sw" id="s2" data-key="complete"></button>
+</div>
+<div class="item">
+<span class="ic">❌</span>
+<div class="inf">
+<div class="lbl" data-i18n="telegram.items.cancelTradeLabel">إلغاء المعاملة</div>
+<div class="dsc" data-i18n="telegram.items.cancelTradeDesc">عند إلغاء المعاملة.</div>
+</div>
+<button class="sw" id="s3" data-key="cancel"></button>
+</div>
+<div class="item">
+<span class="ic">⚠️</span>
+<div class="inf">
+<div class="lbl" data-i18n="telegram.items.disputesLabel">البلاغات والمشاكل</div>
+<div class="dsc" data-i18n="telegram.items.disputesDesc">عند فتح بلاغ.</div>
+</div>
+<button class="sw" id="s4" data-key="dispute"></button>
+</div>
+</div>
+<div class="foot" data-i18n="telegram.footer">سيتم ربط الإعدادات بحسابك فور تفعيل الاتصال.</div>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+<div class="m-box">
+<h4 id="mTitle" data-i18n="telegram.modal.connectTitle">ربط Telegram</h4>
+<p id="mDesc" data-i18n="telegram.modal.connectDesc">اضغط لفتح البوت وإكمال الربط.</p>
+<div class="acts">
+<button class="btn btn-o" id="mCancel" data-i18n="telegram.buttons.cancel">إلغاء</button>
+<button class="btn btn-p" id="mAction" data-i18n="telegram.buttons.openTelegram">فتح Telegram</button>
+</div>
+</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+/* ============================================================
+   منطق صفحة البوت (منطق العمل كما هو بدون تغيير)
+   الترجمة تعتمد حصراً على النظام المركزي:
+   - window.translateKey(key)
+   - window.ZALLanguage.getLanguage()
+   - حدث document: 'zal:languageChanged'  (الآلية الرسمية الوحيدة للجاهزية)
+   ============================================================ */
+(function(){
+  const $ = id => document.getElementById(id);
+  const load = $('load'), main = $('main'), badge = $('badge'), desc = $('desc');
+  const date = $('date'), actions = $('actions');
+  const switches = [$('s1'), $('s2'), $('s3'), $('s4')];
+  const modal = $('modal'), mTitle = $('mTitle'), mDesc = $('mDesc');
+  const mAction = $('mAction'), mCancel = $('mCancel'), toast = $('toast');
+
+  const client = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : null;
+  const SUPABASE_URL = (typeof window.SUPABASE_URL !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
+  const SUPABASE_ANON_KEY = (typeof window.SUPABASE_ANON_KEY !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
+  const FUNCTION_NAME = 'telegram-bot';
+
+  const configured = !!client && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+
+  let status = 'loading';
+  let connectedDate = null;
+  let notifs = { new:false, complete:false, cancel:false, dispute:false };
+  let isConnecting = false;
+  let pollHandle = null;
+  let hasRendered = false;
+
+  // جاهزية النظام المركزي: لا تصبح true إلا بعد أول zal:languageChanged
+  let languageReady = false;
+  let pendingToastKey = null;
+  let pendingRender = false;
+
+  // اختصار للنظام المركزي
+  function tr(key) {
+    if (typeof window.translateKey === 'function') {
+      return window.translateKey(key);
+    }
+    return key;
+  }
+
+  function currentLang() {
+    if (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function') {
+      return window.ZALLanguage.getLanguage();
+    }
+    return document.documentElement.lang || 'ar';
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // عرض رسالة توست عبر النظام المركزي، مع تأجيلها حتى جاهزية القواميس
+  function showToastKey(key) {
+    if (languageReady) {
+      showToast(tr(key));
+    } else {
+      pendingToastKey = key;
+    }
+  }
+
+  async function getSession() {
+    if (!client) throw new Error(tr('telegram.errors.supabaseMissing'));
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    if (!data.session) throw new Error(tr('telegram.errors.loginRequired'));
+    return data.session;
+  }
+
+  async function callFunction(path, method='POST', body=null) {
+    const session = await getSession();
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${FUNCTION_NAME}/${path}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        ...(body ? { body: JSON.stringify(body) } : {})
+    });
+    const raw = await response.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
+    if (!response.ok) throw new Error(data.error || tr('telegram.errors.serverError') + ` (${response.status})`);
+    return data;
+  }
+
+  function render() {
+    // لا نرسم نصوصاً مترجمة قبل جاهزية النظام المركزي
+    if (!languageReady) {
+      pendingRender = true;
+      return;
+    }
+    pendingRender = false;
+
+    const map = {
+      loading: { cls:'wait', txtKey:'telegram.buttons.loading', dKey:'telegram.loadingInfo' },
+      disconnected: { cls:'no', txtKey:'telegram.status.disconnected', dKey:'telegram.descriptions.disconnected' },
+      connected: { cls:'ok', txtKey:'telegram.status.connected', dKey:'telegram.descriptions.connected' },
+      waiting_confirm: { cls:'wait', txtKey:'telegram.status.waitingConfirm', dKey:'telegram.descriptions.waitingConfirm' },
+      error: { cls:'no', txtKey:'telegram.status.error', dKey:'telegram.descriptions.error' }
+    };
+    const s = map[status] || map.disconnected;
+    badge.className = 'badge ' + s.cls;
+    badge.textContent = tr(s.txtKey);
+    desc.textContent = tr(s.dKey);
+
+    const localeMap = { ar:'ar-EG', en:'en-US', es:'es-ES', fr:'fr-FR', tr:'tr-TR' };
+    const lang = currentLang();
+    date.textContent = status === 'connected' && connectedDate
+      ? tr('telegram.datePrefix') + new Date(connectedDate).toLocaleDateString(localeMap[lang] || 'ar-EG')
+      : '';
+
+    actions.innerHTML = '';
+    if (status === 'loading' || status === 'waiting_confirm') {
+      const b = document.createElement('button');
+      b.className = 'btn btn-p';
+      b.disabled = true;
+      b.textContent = status === 'loading' ? tr('telegram.buttons.loading') : tr('telegram.buttons.confirming');
+      actions.appendChild(b);
+    } else if (status === 'connected') {
+      const b = document.createElement('button');
+      b.className = 'btn btn-d';
+      b.textContent = tr('telegram.buttons.disconnect');
+      b.onclick = openDisconnectModal;
+      actions.appendChild(b);
+    } else {
+      const b = document.createElement('button');
+      b.className = 'btn btn-p';
+      b.textContent = tr('telegram.buttons.connect');
+      b.onclick = openConnectModal;
+      actions.appendChild(b);
+    }
+    renderSwitches();
+  }
+
+  const settingColumns = { new: 'new_ad', complete: 'transaction_completed', cancel: 'transaction_cancelled', dispute: 'dispute_opened' };
+
+  function renderSwitches() {
+    switches.forEach(el => {
+      const key = el.dataset.key;
+      el.classList.toggle('on', !!notifs[key]);
+      el.onclick = async () => {
+        if (status !== 'connected') {
+          showToastKey('telegram.toasts.mustLinkFirst');
+          return;
+        }
+        const next = !notifs[key];
+        const previous = notifs[key];
+        notifs[key] = next;
+        el.classList.toggle('on', next);
+        el.disabled = true;
+        try {
+          const session = await getSession();
+          const { error } = await client.from('telegram_notification_settings').update({ [settingColumns[key]]: next }).eq('user_id', session.user.id);
+          if (error) throw error;
+          showToast(next ? tr('telegram.toasts.activated') : tr('telegram.toasts.canceled'));
+        } catch (e) {
+          notifs[key] = previous;
+          el.classList.toggle('on', previous);
+          showToast(e.message || tr('telegram.toasts.settingsSaveError'));
+        } finally {
+          el.disabled = false;
+        }
+      };
+    });
+  }
+
+  async function loadSettings() {
+    try {
+      const session = await getSession();
+      const { data: profile, error: profileError } = await client.from('profiles').select('telegram_connected, telegram_connected_at').eq('id', session.user.id).single();
+      if (profileError) throw profileError;
+
+      const { data: settings, error: settingsError } = await client.from('telegram_notification_settings').select('new_ad, transaction_completed, transaction_cancelled, dispute_opened').eq('user_id', session.user.id).maybeSingle();
+      if (settingsError) throw settingsError;
+
+      status = profile.telegram_connected ? 'connected' : 'disconnected';
+      connectedDate = profile.telegram_connected_at || null;
+      if (settings) {
+        notifs = { new: !!settings.new_ad, complete: !!settings.transaction_completed, cancel: !!settings.transaction_cancelled, dispute: !!settings.dispute_opened };
+      } else {
+        notifs = { new:false, complete:false, cancel:false, dispute:false };
+      }
+      load.style.display = 'none';
+      main.style.display = 'block';
+      hasRendered = true;
+      render();
+    } catch (e) {
+      load.style.display = 'none';
+      main.style.display = 'block';
+      status = 'error';
+      hasRendered = true;
+      render();
+      if (e && e.message) {
+        showToast(e.message);
+      } else {
+        showToastKey('telegram.toasts.settingsLoadError');
+      }
+    }
+  }
+
+  function forceRender() {
+    if (!hasRendered) {
+      hasRendered = true;
+      load.style.display = 'none';
+      main.style.display = 'block';
+      if (status === 'loading') {
+        status = 'disconnected';
+      }
+      render();
+    }
+  }
+
+  function openConnectModal() {
+    if (isConnecting) return;
+    modal.classList.add('on');
+    mTitle.textContent = tr('telegram.modal.connectTitle');
+    mDesc.textContent = tr('telegram.modal.connectDesc');
+    mAction.textContent = tr('telegram.buttons.openTelegram');
+    mAction.className = 'btn btn-p';
+    mAction.disabled = false;
+
+    mAction.onclick = async function() {
+      if (isConnecting) return;
+      isConnecting = true;
+      this.disabled = true;
+      this.textContent = tr('telegram.buttons.creating');
+      try {
+        const data = await callFunction('create-link');
+        if (!data.link) throw new Error(tr('telegram.errors.noLink'));
+        closeModal();
+        const win = window.open(data.link, '_blank');
+        if (!win) window.location.href = data.link;
+        status = 'waiting_confirm';
+        render();
+        showToastKey('telegram.toasts.waitingConfirmToast');
+        startPolling();
+      } catch (e) {
+        showToast(e.message || tr('telegram.toasts.linkCreateError'));
+      } finally {
+        isConnecting = false;
+        mAction.disabled = false;
+        mAction.textContent = tr('telegram.buttons.openTelegram');
+      }
+    };
+    mCancel.onclick = closeModal;
+  }
+
+  function openDisconnectModal() {
+    modal.classList.add('on');
+    mTitle.textContent = tr('telegram.modal.disconnectTitle');
+    mDesc.textContent = tr('telegram.modal.disconnectDesc');
+    mAction.textContent = tr('telegram.buttons.disconnect');
+    mAction.className = 'btn btn-d';
+    mAction.disabled = false;
+
+    mAction.onclick = async function() {
+      if (isConnecting) return;
+      isConnecting = true;
+      this.disabled = true;
+      this.textContent = tr('telegram.buttons.processing');
+      try {
+        await callFunction('disconnect');
+        closeModal();
+        status = 'disconnected';
+        connectedDate = null;
+        notifs = { new:false, complete:false, cancel:false, dispute:false };
+        render();
+        showToastKey('telegram.toasts.unlinkSuccess');
+      } catch (e) {
+        showToast(e.message || tr('telegram.toasts.disconnectError'));
+      } finally {
+        isConnecting = false;
+        mAction.disabled = false;
+        mAction.textContent = tr('telegram.buttons.disconnect');
+      }
+    };
+    mCancel.onclick = closeModal;
+  }
+
+  function closeModal() {
+    modal.classList.remove('on');
+    mAction.disabled = false;
+    isConnecting = false;
+  }
+
+  function startPolling() {
+    clearInterval(pollHandle);
+    let attempts = 0;
+    pollHandle = setInterval(async () => {
+      attempts++;
+      try {
+        const session = await getSession();
+        const { data, error } = await client.from('profiles').select('telegram_connected, telegram_connected_at').eq('id', session.user.id).single();
+        if (!error && data && data.telegram_connected) {
+          status = 'connected';
+          connectedDate = data.telegram_connected_at || new Date().toISOString();
+          clearInterval(pollHandle);
+          await loadSettings();
+        } else if (attempts >= 60) {
+          clearInterval(pollHandle);
+          status = 'disconnected';
+          render();
+          showToastKey('telegram.toasts.pollingTimeout');
+        }
+      } catch (_) {}
+    }, 3000);
+  }
+
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  /* ============================================================
+     الجاهزية عبر النظام المركزي فقط:
+     zal:languageChanged يُطلق بعد كل applyTranslations، بما فيها
+     الأولى عند init. لا مؤقتات ولا فحوصات مفترضة.
+     ============================================================ */
+  document.addEventListener('zal:languageChanged', () => {
+    if (!languageReady) {
+      languageReady = true;
+      if (pendingRender) {
+        pendingRender = false;
+        render();
+      }
+      if (pendingToastKey) {
+        const k = pendingToastKey;
+        pendingToastKey = null;
+        showToast(tr(k));
+      }
+    }
+    if (hasRendered) {
+      render();
+    }
+  });
+
+  if (!configured) {
+    forceRender();
+    status = 'error';
+    render();
+    showToastKey('telegram.errors.supabaseConfig');
+  } else {
+    // مؤقت أمان للاتصال فقط (لا علاقة له بالترجمة)
+    setTimeout(forceRender, 3000);
+    loadSettings();
+  }
+})();
+</script>
+</body>
+</html>

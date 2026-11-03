@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="login.pageTitle">تسجيل الدخول - منصة ZAL P2P</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="language.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-gradient-start: #f0f4f9;
+            --bg-gradient-end: #e2e8f0;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --alert-text: #ffffff;
+            --alert-warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            direction: rtl;
+        }
+
+        .login-card {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 440px;
+            border-radius: 24px;
+            padding: 32px 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .top-header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .lang-dropdown-wrapper { position: relative; }
+
+        .lang-btn {
+            background-color: transparent;
+            border: 1.5px solid var(--primary-blue);
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn:hover { background-color: rgba(37, 99, 235, 0.05); }
+
+        .lang-menu {
+            display: none;
+            position: absolute;
+            top: 110%;
+            right: 0;
+            width: 220px;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            padding: 8px;
+        }
+
+        .lang-menu.show { display: block; }
+
+        .lang-search {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 6px;
+            outline: none;
+            text-align: right;
+        }
+
+        .lang-search:focus { border-color: var(--primary-blue); }
+
+        .lang-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .lang-option:hover { background-color: #f1f5f9; }
+        .lang-option.active { background-color: #eff6ff; color: var(--primary-blue); font-weight: bold; }
+
+        .lang-option .check-mark { opacity: 0; }
+        .lang-option.active .check-mark { opacity: 1; }
+
+        .lang-info { display: flex; align-items: center; gap: 6px; }
+
+        .logo-box {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 18px;
+            padding: 12px 22px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--primary-blue);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .form-group {
+            width: 100%;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: right;
+        }
+
+        .input-container { position: relative; width: 100%; }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+            background-color: #ffffff;
+            color: var(--text-main);
+        }
+
+        .form-input:focus { border-color: var(--primary-blue); }
+
+        .toggle-password {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .forgot-link-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .forgot-link {
+            color: var(--primary-blue);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        .captcha-box {
+            width: 100%;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8fafc;
+            margin-bottom: 24px;
+        }
+
+        .captcha-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+        }
+
+        .captcha-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-blue);
+        }
+
+        .captcha-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .captcha-spinner {
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid var(--border-color);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .captcha-text {
+            font-size: 9px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            margin-bottom: 20px;
+        }
+
+        .submit-btn:hover { background-color: var(--primary-hover); }
+        .submit-btn:active { transform: scale(0.99); }
+
+        .signup-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .signup-link {
+            color: var(--primary-blue);
+            font-weight: 700;
+            text-decoration: none;
+            margin-right: 4px;
+        }
+
+        .signup-link:hover { text-decoration: underline; }
+
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .custom-alert-box {
+            background-color: #1a2b4c;
+            color: var(--alert-text);
+            padding: 20px 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.2s ease-out;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .alert-warning-icon {
+            color: var(--alert-warning);
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .alert-message-text {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+
+        <div class="top-header">
+            <div class="lang-dropdown-wrapper">
+                <button type="button" class="lang-btn" id="langSelectBtn" onclick="toggleLangMenu()">
+                    <span>🌐</span>
+                    <span id="currentLangText">العربية (AR)</span>
+                    <span style="font-size: 9px;">▼</span>
+                </button>
+
+                <div class="lang-menu" id="langMenu">
+                    <input type="text" class="lang-search" id="langSearchInput" data-i18n-ph="login.langSearchPlaceholder" placeholder="بحث عن لغة..." oninput="filterLanguages()">
+                    <div id="langList">
+                        <div class="lang-option active" data-lang="ar" onclick="selectLanguage('ar', 'العربية (AR)', this)">
+                            <div class="lang-info"><span>🌐</span><span>العربية (AR)</span></div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                        <div class="lang-option" data-lang="en" onclick="selectLanguage('en', 'English (EN)', this)">
+                            <div class="lang-info"><span>🇬🇧</span><span>English (EN)</span></div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                        <div class="lang-option" data-lang="fr" onclick="selectLanguage('fr', 'Français (FR)', this)">
+                            <div class="lang-info"><span>🇫🇷</span><span>Français (FR)</span></div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                        <div class="lang-option" data-lang="es" onclick="selectLanguage('es', 'Español (ES)', this)">
+                            <div class="lang-info"><span>🇪🇸</span><span>Español (ES)</span></div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                        <div class="lang-option" data-lang="tr" onclick="selectLanguage('tr', 'Türkçe (TR)', this)">
+                            <div class="lang-info"><span>🇹🇷</span><span>Türkçe (TR)</span></div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="logo-box">P2P</div>
+
+        <h1 class="title" data-i18n="login.title">منصة P2P</h1>
+        <p class="subtitle" data-i18n="login.subtitle">تداول آمن ومباشر عبر الشبكة</p>
+
+        <form id="loginForm" onsubmit="handleLogin(event)" style="width: 100%;">
+            
+            <div class="form-group">
+                <label class="form-label" data-i18n="login.emailLabel">البريد الإلكتروني</label>
+                <div class="input-container">
+                    <input type="email" id="emailInput" class="form-input" data-i18n-ph="login.emailPlaceholder" placeholder="name@example.com" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" data-i18n="login.passwordLabel">كلمة المرور</label>
+                <div class="input-container">
+                    <input type="password" id="passwordInput" class="form-input" data-i18n-placeholder="login.passwordPlaceholder" placeholder="••••••••" required>
+                    <button type="button" class="toggle-password" id="togglePasswordBtn" onclick="togglePasswordVisibility()" data-i18n="login.showPassword">إظهار</button>
+                </div>
+            </div>
+
+            <div class="forgot-link-wrapper">
+                <a href="reset-password.html" class="forgot-link" data-i18n="login.forgotPassword">نسيت كلمة المرور؟</a>
+            </div>
+
+            <div class="captcha-box">
+                <label class="captcha-label">
+                    <input type="checkbox" id="captchaCheckbox" class="captcha-checkbox">
+                    <span data-i18n="login.captchaText">أنا لست برنامج روبوت</span>
+                </label>
+                <div class="captcha-badge">
+                    <div class="captcha-spinner"></div>
+                    <span class="captcha-text" data-i18n="login.captchaProtection">حماية P2P</span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" data-i18n="login.submitButton">تسجيل الدخول</button>
+
+        </form>
+
+        <div class="signup-text">
+            <span data-i18n="login.noAccount">ليس لديك حساب؟</span>
+            <a href="singup.html" class="signup-link" data-i18n="login.createNewAccount">إنشاء حساب جديد</a>
+        </div>
+
+    </div>
+
+    <div class="custom-alert-overlay" id="customAlertOverlay" onclick="closeCustomAlert()">
+        <div class="custom-alert-box" onclick="event.stopPropagation()">
+            <div class="alert-warning-icon">⚠️</div>
+            <div class="alert-message-text" id="customAlertMessage" data-i18n="login.invalidCredentials">كلمة المرور أو البريد الإلكتروني غير صحيح</div>
+        </div>
+    </div>
+
+<script>
+    const langMenu = document.getElementById('langMenu');
+    const langSearchInput = document.getElementById('langSearchInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const customAlertOverlay = document.getElementById('customAlertOverlay');
+    const customAlertMessage = document.getElementById('customAlertMessage');
+
+    const LANG_LABELS = {
+        ar: 'العربية (AR)',
+        en: 'English (EN)',
+        fr: 'Français (FR)',
+        es: 'Español (ES)',
+        tr: 'Türkçe (TR)'
+    };
+
+    // مفتاح الرسالة الحالية في التنبيه (لإعادة ترجمتها عند تغيير اللغة)
+    let currentAlertKey = null;
+
+    // اختصار للنظام المركزي فقط
+    function tr(key) {
+        return (typeof window.translateKey === 'function') ? window.translateKey(key) : key;
+    }
+
+    function toggleLangMenu() {
+        langMenu.classList.toggle('show');
+    }
+
+    document.addEventListener('click', function(event) {
+        const wrapper = document.querySelector('.lang-dropdown-wrapper');
+        if (wrapper && !wrapper.contains(event.target)) {
+            langMenu.classList.remove('show');
+        }
+    });
+
+    function filterLanguages() {
+        const filter = langSearchInput.value.toLowerCase();
+        document.querySelectorAll('.lang-option').forEach(option => {
+            option.style.display = option.textContent.toLowerCase().includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    // تفويض كامل للنظام المركزي (تطبيق + حفظ localStorage + حفظ Supabase)
+    async function selectLanguage(langCode, langLabel, element) {
+        // 1. تحديث الزر والعنصر النشط (واجهة فقط)
+        document.getElementById('currentLangText').textContent = langLabel;
+        document.querySelectorAll('.lang-option').forEach(o => o.classList.remove('active'));
+        if (element) element.classList.add('active');
+
+        // 2. تطبيق الترجمة عبر النظام المركزي — يتولى كل شيء
+        if (window.ZALLanguage && typeof window.ZALLanguage.apply === 'function') {
+            await window.ZALLanguage.apply(langCode);
+        }
+
+        // 3. إغلاق القائمة
+        langMenu.classList.remove('show');
+    }
+
+    function togglePasswordVisibility() {
+        const isHidden = passwordInput.type === 'password';
+        passwordInput.type = isHidden ? 'text' : 'password';
+        const key = isHidden ? 'login.hidePassword' : 'login.showPassword';
+        togglePasswordBtn.setAttribute('data-i18n', key);
+        togglePasswordBtn.textContent = tr(key);
+    }
+
+    function showCustomAlert(messageKey, defaultMessage) {
+        currentAlertKey = messageKey || null;
+        let message = defaultMessage;
+        if (messageKey) {
+            const v = tr(messageKey);
+            if (typeof v === 'string' && v !== messageKey) message = v;
+        }
+        customAlertMessage.textContent = message;
+        customAlertOverlay.style.display = 'flex';
+    }
+
+    function closeCustomAlert() {
+        customAlertOverlay.style.display = 'none';
+        currentAlertKey = null;
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const email = document.getElementById('emailInput').value.trim();
+        const password = passwordInput.value;
+        const isCaptchaChecked = document.getElementById('captchaCheckbox').checked;
+
+        if (!isCaptchaChecked) {
+            showCustomAlert('login.alertCaptchaRequired', 'يرجى تأكيد أنك لست برنامج روبوت للتقدم!');
+            return;
+        }
+
+        try {
+            const client = window.supabaseClient || window.sb ||
+                (typeof supabase !== 'undefined' ? supabase : null);
+            if (!client) {
+                showCustomAlert('login.alertSystemError', 'حدث خطأ غير متوقع في الاتصال بالشبكة!');
+                return;
+            }
+
+            const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                // رسالة الخطأ من Supabase نص إنجليزي ديناميكي — نعرضها كما هي، مع إمكانية ترجمة رسالة عامة عند الفشل
+                showCustomAlert('login.alertLoginFailed', error.message || 'بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.');
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        } catch (err) {
+            showCustomAlert('login.alertSystemError', 'حدث خطأ غير متوقع في الاتصال بالشبكة!');
+        }
+    }
+
+    // ============================================================
+    // الاستماع لتغيير اللغة من النظام المركزي (الآلية الرسمية الوحيدة)
+    // - يُطلق مرة أولى بعد init، ثم عند كل تغيير لغة
+    // ============================================================
+    document.addEventListener('zal:languageChanged', () => {
+        // 1. مزامنة زر اللغة النشط في القائمة مع اللغة الحالية
+        const saved = (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function')
+            ? window.ZALLanguage.getLanguage()
+            : (document.documentElement.lang || 'ar');
+
+        const label = LANG_LABELS[saved] || LANG_LABELS.ar;
+        const currentLangText = document.getElementById('currentLangText');
+        if (currentLangText) currentLangText.textContent = label;
+
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.lang === saved);
+        });
+
+        // 2. إعادة ترجمة زر إظهار/إخفاء كلمة المرور حسب حالته الحالية
+        if (togglePasswordBtn) {
+            const key = togglePasswordBtn.getAttribute('data-i18n') || 'login.showPassword';
+            togglePasswordBtn.textContent = tr(key);
+        }
+
+        // 3. إعادة ترجمة رسالة التنبيه الظاهرة حالياً إن وُجدت
+        if (currentAlertKey && customAlertOverlay.style.display === 'flex') {
+            const v = tr(currentAlertKey);
+            if (typeof v === 'string' && v !== currentAlertKey) {
+                customAlertMessage.textContent = v;
+            }
+        }
+    });
+</script>
+</body>
+</html>
