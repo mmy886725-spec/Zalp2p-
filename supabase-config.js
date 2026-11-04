@@ -6,8 +6,8 @@
   "use strict";
 
   // ضع بيانات مشروعك هنا
-  const SUPABASE_URL = "https://ocrkyftwzsqumkebythf.supabase.co/rest/v1/";
-  const SUPABASE_ANON_KEY = "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn";
+  const SUPABASE_URL = "= "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y";
+  const SUPABASE_ANON_KEY = "https://ocrkyftwzsqumkebythf.supabase.co/rest/v1/";
 
   if (!window.supabase) {
     console.error("Supabase library is not loaded.");
