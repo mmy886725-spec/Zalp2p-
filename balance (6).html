@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="balance.pageTitle">الرصيد - منصة ZAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="language.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color:#f0f6ff; color:#1e3a8a; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+        .app-header { width:100%; max-width:550px; background-color:#ffffff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 20px rgba(37,99,235,0.06); border-bottom:1px solid #dbeafe; position:sticky; top:0; z-index:100; }
+        .brand-section { display:flex; align-items:center; gap:10px; }
+        .brand-logo { width:40px; height:40px; background-color:#2563eb; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:800; font-size:14px; box-shadow:0 4px 12px rgba(37,99,235,0.25); }
+        .brand-name { font-size:18px; font-weight:700; color:#1e3a8a; }
+        .hamburger-menu-btn { background:none; border:none; cursor:pointer; display:flex; flex-direction:column; gap:5px; padding:6px; border-radius:8px; transition:background-color 0.2s; }
+        .hamburger-menu-btn:hover { background-color:#eff6ff; }
+        .menu-bar-line { width:22px; height:2.5px; background-color:#2563eb; border-radius:2px; }
+        .overlay-backdrop { position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(30,58,138,0.4); opacity:0; visibility:hidden; transition:all 0.3s ease; z-index:998; }
+        .overlay-backdrop.active { opacity:1; visibility:visible; }
+        .side-navigation-drawer { position:fixed; top:0; right:-280px; width:280px; height:100%; background-color:#ffffff; box-shadow:-5px 0 25px rgba(30,58,138,0.15); z-index:999; transition:right 0.3s cubic-bezier(0.175,0.885,0.32,1.275); display:flex; flex-direction:column; padding:24px 20px; }
+        .side-navigation-drawer.open { right:0; }
+        .drawer-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; border-bottom:1px solid #e0e7ff; margin-bottom:20px; }
+        .drawer-title { font-size:16px; font-weight:700; color:#1e3a8a; }
+        .close-drawer-btn { background:none; border:none; font-size:18px; color:#2563eb; cursor:pointer; }
+        .drawer-menu-list { list-style:none; display:flex; flex-direction:column; gap:8px; }
+        .menu-item-link { display:flex; align-items:center; gap:12px; padding:12px 14px; color:#1e3a8a; text-decoration:none; font-size:14px; font-weight:600; border-radius:10px; transition:background-color 0.2s, color 0.2s; }
+        .menu-item-link:hover { background-color:#eff6ff; color:#2563eb; }
+        .menu-item-link.active { background:#dbeafe; color:#2563eb; box-shadow:0 0 0 1px #bfdbfe inset; }
+        .logout-link { color:#dc2626; margin-top:auto; cursor:pointer; }
+        .logout-link:hover { background-color:#fef2f2; color:#dc2626; }
+        .main-container { width:100%; max-width:550px; padding:20px; flex:1; }
+        .balance-card { background-color:#ffffff; border-radius:20px; padding:28px 22px; box-shadow:0 10px 30px rgba(37,99,235,0.08); border:1px solid #dbeafe; margin-bottom:24px; text-align:center; }
+        .balance-title { font-size:18px; font-weight:700; color:#1e3a8a; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .balance-amount { font-size:42px; font-weight:800; color:#2563eb; background-color:#eff6ff; padding:16px 24px; border-radius:16px; display:inline-block; border:1px solid #bfdbfe; margin:8px 0 4px; letter-spacing:1px; }
+        .balance-sub { font-size:13px; color:#64748b; margin-top:8px; }
+        .info-card { background-color:#ffffff; border-radius:20px; padding:20px 22px; box-shadow:0 10px 30px rgba(37,99,235,0.08); border:1px solid #dbeafe; }
+        .info-card p { font-size:14px; color:#1e3a8a; line-height:1.6; }
+        .info-card .highlight { color:#2563eb; font-weight:700; }
+        .empty-results { text-align:center; padding:35px 20px; background-color:#ffffff; border-radius:14px; border:1px dashed #bfdbfe; color:#3b82f6; font-size:13px; }
+        .user-profile-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background-color:#f0f6ff; border:1px solid #dbeafe; border-radius:16px; margin-bottom:20px; direction:rtl; }
+        .user-avatar-img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #2563eb; background-color:#ffffff; flex-shrink:0; }
+        .user-info-text { display:flex; flex-direction:column; gap:2px; overflow:hidden; }
+        .user-display-name { font-size:14px; font-weight:700; color:#1e3a8a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .user-display-email { font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .balance-hint { font-size:12px; color:#b45309; background-color:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:6px 10px; margin-top:10px; display:none; }
+        .balance-hint.show { display:block; }
+    </style>
+</head>
+<body>
+<header class="app-header">
+    <div class="brand-section">
+        <div class="brand-logo" data-i18n="header.brandLogo">ZAL</div>
+        <span class="brand-name" data-i18n="header.brandName">منصة ZAL</span>
+    </div>
+    <button class="hamburger-menu-btn" id="openDrawerBtn" data-i18n-title="header.openMenuTitle">
+        <div class="menu-bar-line"></div>
+        <div class="menu-bar-line"></div>
+        <div class="menu-bar-line"></div>
+    </button>
+</header>
+
+<div class="overlay-backdrop" id="overlayBackdrop"></div>
+
+<aside class="side-navigation-drawer" id="sideDrawer">
+    <div class="drawer-header">
+        <span class="drawer-title" data-i18n="drawer.title">خيارات الحساب</span>
+        <button class="close-drawer-btn" id="closeDrawerBtn" data-i18n-title="drawer.closeTitle">✕</button>
+    </div>
+    <div class="user-profile-card">
+        <img id="userAvatar" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%232563eb'/%3E%3Ctext x='24' y='30' font-size='20' fill='white' text-anchor='middle' font-family='sans-serif'%3E%3F%3C/text%3E%3C/svg%3E" alt="صورة" class="user-avatar-img" data-i18n-alt="profile.avatarAlt">
+        <div class="user-info-text">
+            <span id="userName" class="user-display-name" data-i18n="profile.userNameLoading">جاري التحميل...</span>
+            <span id="userEmail" class="user-display-email" data-i18n="profile.userEmailPlaceholder">...</span>
+        </div>
+    </div>
+    <ul class="drawer-menu-list">
+        <li><a href="balance.html" class="menu-item-link active" data-i18n="drawer.balance">💰 الرصيد</a></li>
+        <li><a href="post.html" class="menu-item-link" data-i18n="drawer.postAd">📢 نشر إعلان</a></li>
+        <li><a href="research.html" class="menu-item-link" data-i18n="drawer.searchAds">🔍 البحث عن إعلان</a></li>
+        <li><a href="orders.html" class="menu-item-link" data-i18n="drawer.orders">📋 الطلبات المكتملة والمنشورة</a></li>
+        <li><a href="bot.html" class="menu-item-link" data-i18n="drawer.editProfile">🤖 بوت تليجرام</a></li>
+        <li><a href="settings.html" class="menu-item-link" data-i18n="drawer.settings">⚙️ الإعدادات</a></li>
+        <li><a href="index.html" id="logoutBtn" class="menu-item-link logout-link" data-i18n="drawer.logout">🚪 تسجيل الخروج</a></li>
+    </ul>
+</aside>
+
+<main class="main-container">
+    <div class="balance-card">
+        <h2 class="balance-title" data-i18n="balance.title">💰 رصيدك الحالي</h2>
+        <div class="balance-amount" id="balanceDisplay">—</div>
+        <div class="balance-sub" data-i18n="balance.subText">(عملة ZAL)</div>
+        <div class="balance-hint" id="balanceHint" data-i18n="balance.unavailableHint">تعذر جلب الرصيد حاليًا. تحقق من اتصالك أو تسجيل الدخول.</div>
+    </div>
+</main>
+
+<script>
+    const supabaseClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient)
+        ? window.supabaseClient
+        : null;
+
+    const $ = id => document.getElementById(id);
+    const i18n = (key, fb) => (window.t ? window.t(key) : fb);
+
+    function setHintVisible(visible) {
+        const hint = $('balanceHint');
+        if (hint) hint.classList.toggle('show', !!visible);
+    }
+
+    function showAvatarFallback() {
+        $('userAvatar').src = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%232563eb'/%3E%3Ctext x='24' y='30' font-size='20' fill='white' text-anchor='middle' font-family='sans-serif'%3E%3F%3C/text%3E%3C/svg%3E";
+    }
+
+    // دالة جديدة: تصفير الواجهة لمنع ظهور بيانات مستخدم سابق أثناء التحميل أو عند تسجيل الخروج
+    function resetProfileUI() {
+        $('userAvatar').onerror = null;
+        showAvatarFallback();
+        $('userName').textContent = i18n('profile.userNameLoading', 'جاري التحميل...');
+        $('userEmail').textContent = i18n('profile.userEmailPlaceholder', '...');
+        $('balanceDisplay').textContent = i18n('balance.placeholder', '—');
+    }
+
+    // دالة جديدة: لمسح البيانات عند تسجيل الخروج
+    function clearProfileUI() {
+        $('userAvatar').onerror = null;
+        showAvatarFallback();
+        $('userName').textContent = i18n('balance.defaultUserName', 'مستخدم ZAL');
+        $('userEmail').textContent = '';
+        $('balanceDisplay').textContent = i18n('balance.placeholder', '—');
+        setHintVisible(true);
+    }
+
+    let isLoading = false;
+
+    async function loadUserProfileAndBalance() {
+        if (isLoading) return;
+        isLoading = true;
+
+        resetProfileUI();
+
+        const PH = i18n('balance.placeholder', '—');
+        if (!supabaseClient) {
+            clearProfileUI();
+            isLoading = false;
+            return;
+        }
+
+        let user = null;
+        try {
+            const { data, error } = await supabaseClient.auth.getUser();
+            if (error || !data?.user) {
+                clearProfileUI();
+                isLoading = false;
+                return;
+            }
+            user = data.user;
+        } catch (err) {
+            clearProfileUI();
+            isLoading = false;
+            return;
+        }
+
+        // ضبط البريد الإلكتروني بشكل صريح (أو مسحه إن لم يوجد)
+        if (user.email) {
+            $('userEmail').textContent = user.email;
+        } else {
+            $('userEmail').textContent = '';
+        }
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', user.id)
+                .limit(1);
+
+            if (!error && data && data.length > 0) {
+                const profile = data[0];
+                
+                // معالجة الاسم: إذا كان فارغاً أو غير موجود نستخدم النص الافتراضي من الترجمة
+                const displayName = (profile.full_name && profile.full_name.trim() !== '') 
+                    ? profile.full_name 
+                    : i18n('balance.defaultUserName', 'مستخدم ZAL');
+                $('userName').textContent = displayName;
+
+                // معالجة الصورة: نضع الرابط مباشرة (لأننا تحققنا أنها روابط كاملة)، وإذا كانت فارغة نستخدم الافتراضية
+                if (profile.avatar_url && profile.avatar_url.trim() !== '') {
+                    $('userAvatar').src = profile.avatar_url;
+                    $('userAvatar').onerror = showAvatarFallback;
+                } else {
+                    showAvatarFallback();
+                }
+            } else {
+                // في حال عدم وجود صف للمستخدم في جدول profiles
+                $('userName').textContent = i18n('balance.defaultUserName', 'مستخدم ZAL');
+                showAvatarFallback();
+            }
+        } catch (err) {
+            // في حال حدوث خطأ أثناء جلب البروفايل
+            $('userName').textContent = i18n('balance.defaultUserName', 'مستخدم ZAL');
+            showAvatarFallback();
+        }
+
+        let balanceValue = null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('balances')
+                .select('balance, reserved')
+                .eq('user_id', user.id)
+                .limit(1);
+            if (!error && data && data.length > 0) {
+                balanceValue = parseFloat(data[0].balance);
+            }
+        } catch (err) {}
+
+        if (balanceValue !== null && !isNaN(balanceValue)) {
+            $('balanceDisplay').textContent = balanceValue.toFixed(2);
+            setHintVisible(false);
+        } else {
+            $('balanceDisplay').textContent = PH;
+            setHintVisible(true);
+        }
+
+        isLoading = false;
+    }
+
+    const openDrawerBtn = $('openDrawerBtn');
+    const closeDrawerBtn = $('closeDrawerBtn');
+    const sideDrawer = $('sideDrawer');
+    const overlayBackdrop = $('overlayBackdrop');
+
+    function toggleDrawer(open) {
+        if (open) {
+            sideDrawer.classList.add('open');
+            overlayBackdrop.classList.add('active');
+        } else {
+            sideDrawer.classList.remove('open');
+            overlayBackdrop.classList.remove('active');
+        }
+    }
+
+    openDrawerBtn.addEventListener('click', () => toggleDrawer(true));
+    closeDrawerBtn.addEventListener('click', () => toggleDrawer(false));
+    overlayBackdrop.addEventListener('click', () => toggleDrawer(false));
+
+    const logoutBtn = $('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                if (supabaseClient && supabaseClient.auth) await supabaseClient.auth.signOut();
+            } catch (err) {}
+            window.location.href = 'index.html';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserProfileAndBalance();
+    });
+
+    // التعديل الجوهري: مراقبة حالة تسجيل الدخول لتحديث البيانات فوراً عند الدخول أو الخروج
+    if (supabaseClient) {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            // نتجاهل الحدث الأولي لأن DOMContentLoaded سيتكفل به
+            if (event === 'INITIAL_SESSION') return;
+
+            if (event === 'SIGNED_OUT') {
+                clearProfileUI();
+            } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                loadUserProfileAndBalance();
+            }
+        });
+    }
+</script>
+</body>
+</html>
