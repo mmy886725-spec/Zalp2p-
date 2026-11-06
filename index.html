@@ -556,7 +556,7 @@
                 // رسالة الخطأ من Supabase نص إنجليزي ديناميكي — نعرضها كما هي، مع إمكانية ترجمة رسالة عامة عند الفشل
                 showCustomAlert('login.alertLoginFailed', error.message || 'بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.');
             } else {
-                window.location.href = 'dashboard.html';
+                window.location.href = 'research.html';
             }
         } catch (err) {
             showCustomAlert('login.alertSystemError', 'حدث خطأ غير متوقع في الاتصال بالشبكة!');
