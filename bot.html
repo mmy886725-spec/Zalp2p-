@@ -157,7 +157,7 @@ body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;paddin
   const client = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : null;
   const SUPABASE_URL = (typeof window.SUPABASE_URL !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
   const SUPABASE_ANON_KEY = (typeof window.SUPABASE_ANON_KEY !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
-  const FUNCTION_NAME = 'telegram-bot';
+  const FUNCTION_NAME = 'dynamic-processor';
 
   const configured = !!client && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
 
