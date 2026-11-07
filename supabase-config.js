@@ -3,43 +3,28 @@
 // ZAL P2P
 // ==========================================
 
-(function () {
+// 1. ربط المفاتيح بالنافذة (window) لكي تقرأها باقي الملفات
+window.SUPABASE_URL = "https://ocrkyftwzsqumkebythf.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn";
 
-
-    // بيانات مشروع Supabase
-    const SUPABASE_URL = "https://ocrkyftwzsqumkebythf.supabase.co";
-
-    const SUPABASE_ANON_KEY = "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn";
-
-    // التحقق من توفر مكتبة Supabase
-    if (
-        typeof window.supabase === "undefined" ||
-        typeof window.supabase.createClient !== "function"
-    ) {
-        console.error("Supabase library is not loaded.");
-        return;
-    }
-
-    // منع إنشاء عميل Supabase أكثر من مرة
-    if (window.supabaseClient) {
-        return;
-    }
-
-    // إنشاء عميل Supabase
-    window.supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-        {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true,
-                storage: window.localStorage
+// 2. التحقق من تحميل المكتبة وإنشاء العميل
+if (typeof window.supabase !== "undefined" && typeof window.supabase.createClient === "function") {
+    
+    if (!window.supabaseClient) {
+        window.supabaseClient = window.supabase.createClient(
+            window.SUPABASE_URL,
+            window.SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    storage: window.localStorage
+                }
             }
-        }
-    );
-
-    // اختصار إضافي للتوافق مع الواجهات
-    window.sb = window.supabaseClient;
-
-})();
+        );
+        window.sb = window.supabaseClient; // اختصار إضافي
+    }
+} else {
+    console.error("مكتبة Supabase لم يتم تحميلها. تأكد من وضع رابط المكتبة قبل ملف الإعدادات.");
+}
