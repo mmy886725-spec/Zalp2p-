@@ -218,7 +218,7 @@ body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;paddin
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          
           'apikey': SUPABASE_ANON_KEY
         },
         ...(body ? { body: JSON.stringify(body) } : {})
