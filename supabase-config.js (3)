@@ -1,0 +1,50 @@
+// ==========================================
+// Supabase Configuration
+// ZAL P2P
+// ==========================================
+
+(function () {
+
+    // بيانات مشروع Supabase
+    const SUPABASE_URL = "https://ocrkyftwzsqumkebythf.supabase.co";
+
+    const SUPABASE_ANON_KEY = "sb_publishable_bpdYGWB-ijZStcFYuprIYA_Lp2-Y8kn";
+
+    // التحقق من توفر مكتبة Supabase
+    if (
+        typeof window.supabase === "undefined" ||
+        typeof window.supabase.createClient !== "function"
+    ) {
+        console.error("Supabase library is not loaded.");
+        return;
+    }
+
+    // منع إنشاء عميل Supabase أكثر من مرة
+    if (window.supabaseClient) {
+        return;
+    }
+
+    // إنشاء عميل Supabase
+    window.supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                storage: window.localStorage
+            }
+        }
+    );
+
+    // اختصار إضافي للتوافق مع الواجهات
+    window.sb = window.supabaseClient;
+
+    // ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
+    // جديد: تصدير القيم للاستخدام من bot.html وغيره
+    // ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+
+})();
