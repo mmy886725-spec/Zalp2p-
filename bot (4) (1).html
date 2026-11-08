@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Notifications</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;padding:20px 16px;}
+.wrap{max-width:560px;width:100%;background:#fff;border-radius:28px;padding:24px 20px 28px;border:1px solid #dbeafe;}
+.head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.head h1{font-size:20px;display:flex;align-items:center;gap:8px;}
+.head p{font-size:14px;color:#475569;margin-top:2px;}
+.back{background:#f1f5f9;border:1px solid #e2e8f0;padding:6px 14px;border-radius:40px;font-weight:600;font-size:13px;cursor:pointer;}
+.load{display:flex;align-items:center;gap:12px;justify-content:center;padding:40px 0;font-weight:600;color:#2563eb;}
+.spin{width:26px;height:26px;border:3px solid #dbeafe;border-top:3px solid #2563eb;border-radius:50%;animation:s .8s linear infinite;}
+@keyframes s{to{transform:rotate(360deg)}}
+.card{background:#fafcff;border:1px solid #e0e7ff;border-radius:18px;padding:18px;margin-bottom:18px;}
+.c-top{display:flex;justify-content:space-between;align-items:center;}
+.c-top h2{display:flex;align-items:center;gap:10px;font-size:17px;}
+.badge{padding:3px 14px;border-radius:40px;font-size:13px;font-weight:700;}
+.badge.no{background:#fee2e2;color:#b91c1c;}
+.badge.ok{background:#dcfce7;color:#15803d;}
+.badge.wait{background:#dbeafe;color:#2563eb;}
+.desc{color:#475569;font-size:14px;margin:8px 0 14px;}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;}
+.date{font-size:13px;color:#64748b;}
+.btn{font-weight:700;font-size:14px;padding:10px 24px;border-radius:60px;border:none;cursor:pointer;}
+.btn-p{background:#2563eb;color:#fff;}
+.btn-p:hover{background:#1d4ed8;}
+.btn-d{background:#ef4444;color:#fff;}
+.btn-d:hover{background:#dc2626;}
+.btn-o{background:transparent;border:1.5px solid #bfdbfe;color:#1e3a8a;}
+.btn:disabled{opacity:.6;pointer-events:none;}
+.notif h3{font-size:17px;display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+.notif .sub{color:#64748b;font-size:14px;margin-bottom:14px;}
+.item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.item:last-child{border-bottom:0;}
+.item .ic{font-size:20px;width:32px;text-align:center;}
+.item .inf{flex:1;}
+.item .inf .lbl{font-weight:700;font-size:14px;color:#0b2b5a;}
+.item .inf .dsc{font-size:12px;color:#64748b;}
+.sw{position:relative;width:42px;height:22px;flex-shrink:0;background:#cbd5e1;border-radius:40px;border:none;padding:0;cursor:pointer;transition:.2s;}
+.sw.on{background:#2563eb;}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;}
+.sw.on::after{transform:translateX(20px);}
+.foot{font-size:12px;color:#94a3b8;text-align:center;margin-top:14px;}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;opacity:0;visibility:hidden;transition:.25s;}
+.modal.on{opacity:1;visibility:visible;}
+.m-box{background:#fff;max-width:400px;width:100%;border-radius:24px;padding:24px 22px;transform:translateY(16px) scale(.96);transition:.25s;}
+.modal.on .m-box{transform:translateY(0) scale(1);}
+.m-box h4{font-size:19px;margin-bottom:4px;}
+.m-box p{color:#475569;font-size:14px;margin:4px 0 16px;}
+.acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;}
+.acts .btn{min-width:90px;justify-content:center;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:1000;opacity:0;transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+@media(max-width:480px){.wrap{padding:16px;}.btn{width:100%;justify-content:center;}.row{flex-direction:column;align-items:stretch;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="head">
+<div><h1>📨 Telegram Notifications</h1><p>Link your account to receive trade notifications.</p></div>
+<button class="back" onclick="window.location.href='research.html'">↩ Back</button></div>
+
+<div id="load" class="load"><div class="spin"></div><span>Loading settings...</span></div>
+
+<div id="main" style="display:none">
+<div class="card">
+<div class="c-top">
+<h2>✈️ <span>Telegram</span></h2>
+<span class="badge no" id="badge">Not linked</span>
+</div>
+<div class="desc" id="desc">Link Telegram to receive notifications.</div>
+<div class="row">
+<span class="date" id="date"></span>
+<div id="actions"></div>
+</div>
+</div>
+
+<div class="card notif">
+<h3>🔔 Trade Notifications</h3>
+<div class="sub">Choose which notifications you want to receive.</div>
+
+<div class="item">
+<span class="ic">📢</span>
+<div class="inf">
+<div class="lbl">New ad published</div>
+<div class="dsc">When your ad is published.</div>
+</div>
+<button class="sw" id="s_new_ad" data-key="new_ad"></button>
+</div>
+
+<div class="item">
+<span class="ic">🔔</span>
+<div class="inf">
+<div class="lbl">New trade started</div>
+<div class="dsc">When a new trade starts.</div>
+</div>
+<button class="sw" id="s_new_trade" data-key="new_trade"></button>
+</div>
+
+<div class="item">
+<span class="ic">🤝</span>
+<div class="inf">
+<div class="lbl">Trade request on your ad</div>
+<div class="dsc">When someone starts trading on your ad.</div>
+</div>
+<button class="sw" id="s_new_trade_request" data-key="new_trade_request"></button>
+</div>
+
+<div class="item">
+<span class="ic">✅</span>
+<div class="inf">
+<div class="lbl">Transaction completed</div>
+<div class="dsc">When a transaction is completed.</div>
+</div>
+<button class="sw" id="s_transaction_completed" data-key="transaction_completed"></button>
+</div>
+
+<div class="item">
+<span class="ic">❌</span>
+<div class="inf">
+<div class="lbl">Transaction cancelled</div>
+<div class="dsc">When a transaction is cancelled.</div>
+</div>
+<button class="sw" id="s_transaction_cancelled" data-key="transaction_cancelled"></button>
+</div>
+
+<div class="item">
+<span class="ic">⚠️</span>
+<div class="inf">
+<div class="lbl">Report opened</div>
+<div class="dsc">When a report is opened against you.</div>
+</div>
+<button class="sw" id="s_dispute_opened" data-key="dispute_opened"></button>
+</div>
+
+<div class="item">
+<span class="ic">💬</span>
+<div class="inf">
+<div class="lbl">New message</div>
+<div class="dsc">When you receive a new chat message.</div>
+</div>
+<button class="sw" id="s_chat_message" data-key="chat_message"></button>
+</div>
+</div>
+<div class="foot">Settings are synced with your account automatically.</div>
+</div>
+</div>
+
+<div class="modal" id="modal">
+<div class="m-box">
+<h4 id="mTitle">Connect Telegram</h4>
+<p id="mDesc">Click to open the bot and complete linking.</p>
+<div class="acts">
+<button class="btn btn-o" id="mCancel">Cancel</button>
+<button class="btn btn-p" id="mAction">Open Telegram</button>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const load = $('load'), main = $('main'), badge = $('badge'), desc = $('desc');
+  const date = $('date'), actions = $('actions');
+  const switches = document.querySelectorAll('.sw');
+  const modal = $('modal'), mTitle = $('mTitle'), mDesc = $('mDesc');
+  const mAction = $('mAction'), mCancel = $('mCancel'), toast = $('toast');
+
+  const client = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : null;
+  const SUPABASE_URL = window.SUPABASE_URL || '';
+  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+  const FUNCTION_NAME = 'telegram-bot';
+  const configured = !!client && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+
+  let status = 'loading';
+  let connectedDate = null;
+  let notifs = {};
+  let isConnecting = false;
+  let pollHandle = null;
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  async function getSession() {
+    if (!client) throw new Error('Supabase not configured');
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    if (!data.session) throw new Error('Please log in first');
+    return data.session;
+  }
+
+  async function callFunction(path, method = 'POST', body = null) {
+    const session = await getSession();
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${FUNCTION_NAME}/${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const raw = await response.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
+    if (!response.ok) throw new Error(data.error || `Server error (${response.status})`);
+    return data;
+  }
+
+  function render() {
+    const map = {
+      loading: { cls: 'wait', txt: 'Loading...', d: 'Loading settings...' },
+      disconnected: { cls: 'no', txt: 'Not linked', d: 'Link Telegram to receive notifications.' },
+      connected: { cls: 'ok', txt: 'Connected', d: 'You will receive notifications in Telegram.' },
+      waiting_confirm: { cls: 'wait', txt: 'Waiting...', d: 'Please confirm in Telegram.' },
+      error: { cls: 'no', txt: 'Error', d: 'Could not load settings.' },
+    };
+    const s = map[status] || map.disconnected;
+    badge.className = 'badge ' + s.cls;
+    badge.textContent = s.txt;
+    desc.textContent = s.d;
+
+    date.textContent = status === 'connected' && connectedDate
+      ? 'Linked: ' + new Date(connectedDate).toLocaleDateString()
+      : '';
+
+    actions.innerHTML = '';
+    if (status === 'loading' || status === 'waiting_confirm') {
+      const b = document.createElement('button');
+      b.className = 'btn btn-p';
+      b.disabled = true;
+      b.textContent = status === 'loading' ? 'Loading...' : 'Confirming...';
+      actions.appendChild(b);
+    } else if (status === 'connected') {
+      const b = document.createElement('button');
+      b.className = 'btn btn-d';
+      b.textContent = 'Disconnect';
+      b.onclick = openDisconnectModal;
+      actions.appendChild(b);
+    } else {
+      const b = document.createElement('button');
+      b.className = 'btn btn-p';
+      b.textContent = 'Connect Telegram';
+      b.onclick = openConnectModal;
+      actions.appendChild(b);
+    }
+
+    switches.forEach(el => {
+      const key = el.dataset.key;
+      el.classList.toggle('on', !!notifs[key]);
+    });
+  }
+
+  switches.forEach(el => {
+    el.onclick = async () => {
+      if (status !== 'connected') {
+        showToast('You must link your account first.');
+        return;
+      }
+      const key = el.dataset.key;
+      const next = !notifs[key];
+      const prev = notifs[key];
+      notifs[key] = next;
+      el.classList.toggle('on', next);
+      el.disabled = true;
+      try {
+        const session = await getSession();
+        const { error } = await client.from('telegram_notification_settings')
+          .upsert({ user_id: session.user.id, [key]: next }, { onConflict: 'user_id' });
+        if (error) throw error;
+        showToast(next ? 'Enabled' : 'Disabled');
+      } catch (e) {
+        notifs[key] = prev;
+        el.classList.toggle('on', prev);
+        showToast(e.message || 'Could not save setting');
+      } finally {
+        el.disabled = false;
+      }
+    };
+  });
+
+  async function loadSettings() {
+    try {
+      const session = await getSession();
+      const { data: profile, error: pErr } = await client.from('profiles')
+        .select('telegram_connected, telegram_connected_at')
+        .eq('id', session.user.id)
+        .single();
+      if (pErr) throw pErr;
+
+      const { data: settings, error: sErr } = await client.from('telegram_notification_settings')
+        .select('new_ad, new_trade, new_trade_request, transaction_completed, transaction_cancelled, dispute_opened, chat_message')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      if (sErr) throw sErr;
+
+      status = profile.telegram_connected ? 'connected' : 'disconnected';
+      connectedDate = profile.telegram_connected_at || null;
+
+      notifs = {
+        new_ad: !!settings?.new_ad,
+        new_trade: !!settings?.new_trade,
+        new_trade_request: !!settings?.new_trade_request,
+        transaction_completed: settings?.transaction_completed ?? true,
+        transaction_cancelled: settings?.transaction_cancelled ?? true,
+        dispute_opened: settings?.dispute_opened ?? true,
+        chat_message: settings?.chat_message ?? false,
+      };
+
+      load.style.display = 'none';
+      main.style.display = 'block';
+      render();
+    } catch (e) {
+      load.style.display = 'none';
+      main.style.display = 'block';
+      status = 'error';
+      render();
+      showToast(e.message || 'Could not load settings');
+    }
+  }
+
+  function openConnectModal() {
+    if (isConnecting) return;
+    modal.classList.add('on');
+    mTitle.textContent = 'Connect Telegram';
+    mDesc.textContent = 'Click to open the bot and complete linking.';
+    mAction.textContent = 'Open Telegram';
+    mAction.className = 'btn btn-p';
+    mAction.disabled = false;
+
+    mAction.onclick = async function() {
+      if (isConnecting) return;
+      isConnecting = true;
+      this.disabled = true;
+      this.textContent = 'Creating...';
+      try {
+        const data = await callFunction('create-link');
+        if (!data.link) throw new Error('No link returned');
+        closeModal();
+        const win = window.open(data.link, '_blank');
+        if (!win) window.location.href = data.link;
+        status = 'waiting_confirm';
+        render();
+        showToast('Waiting for confirmation in Telegram...');
+        startPolling();
+      } catch (e) {
+        showToast(e.message || 'Could not create link');
+      } finally {
+        isConnecting = false;
+        mAction.disabled = false;
+        mAction.textContent = 'Open Telegram';
+      }
+    };
+    mCancel.onclick = closeModal;
+  }
+
+  function openDisconnectModal() {
+    modal.classList.add('on');
+    mTitle.textContent = 'Disconnect Telegram';
+    mDesc.textContent = 'Are you sure? You will stop receiving notifications.';
+    mAction.textContent = 'Disconnect';
+    mAction.className = 'btn btn-d';
+    mAction.disabled = false;
+
+    mAction.onclick = async function() {
+      if (isConnecting) return;
+      isConnecting = true;
+      this.disabled = true;
+      this.textContent = 'Processing...';
+      try {
+        await callFunction('disconnect');
+        closeModal();
+        status = 'disconnected';
+        connectedDate = null;
+        notifs = {};
+        render();
+        showToast('Disconnected successfully');
+      } catch (e) {
+        showToast(e.message || 'Could not disconnect');
+      } finally {
+        isConnecting = false;
+        mAction.disabled = false;
+        mAction.textContent = 'Disconnect';
+      }
+    };
+    mCancel.onclick = closeModal;
+  }
+
+  function closeModal() {
+    modal.classList.remove('on');
+    mAction.disabled = false;
+    isConnecting = false;
+  }
+
+  function startPolling() {
+    clearInterval(pollHandle);
+    let attempts = 0;
+    pollHandle = setInterval(async () => {
+      attempts++;
+      try {
+        const session = await getSession();
+        const { data, error } = await client.from('profiles')
+          .select('telegram_connected, telegram_connected_at')
+          .eq('id', session.user.id)
+          .single();
+        if (!error && data?.telegram_connected) {
+          clearInterval(pollHandle);
+          await loadSettings();
+        } else if (attempts >= 60) {
+          clearInterval(pollHandle);
+          status = 'disconnected';
+          render();
+          showToast('Timed out. Try again.');
+        }
+      } catch (_) {}
+    }, 3000);
+  }
+
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  if (!configured) {
+    load.style.display = 'none';
+    main.style.display = 'block';
+    status = 'error';
+    render();
+    showToast('Supabase config missing.');
+  } else {
+    loadSettings();
+  }
+})();
+</script>
+</body>
+</html>
