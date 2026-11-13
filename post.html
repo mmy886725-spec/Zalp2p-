@@ -771,9 +771,10 @@
                     return;
                 }
 
-                const profileEmail = profile?.email || user.email || '';
-document.getElementById('userEmail').textContent = profileEmail || 'بدون إيميل';
-document.getElementById('userEmail').removeAttribute('data-i18n');
+            const emailElement = document.getElementById('userEmail');
+
+emailElement.textContent = user.email || 'بدون إيميل';
+emailElement.removeAttribute('data-i18n');
                 const { data: profile, error: profileError } = await supabaseClient
     .from('profiles')
     .select('full_name, avatar_url, email')
