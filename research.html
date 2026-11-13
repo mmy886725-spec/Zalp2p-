@@ -59,7 +59,7 @@
         .drawer-header h3 { font-size:16px; }
         .close-btn { background:none; border:none; font-size:20px; color:#2563eb; cursor:pointer; padding:4px 8px; }
         .close-btn:hover { background:#eff6ff; border-radius:8px; }
-        .profile-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background:#f0f6ff; border:1px solid #dbeafe; border-radius:16px; margin-bottom:20px; }
+        
         .profile-card img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #2563eb; background:#fff; }
         .profile-card .name { font-size:14px; font-weight:700; color:#1e3a8a; }
         .profile-card .email { font-size:11px; color:#64748b; }
@@ -67,7 +67,24 @@
         .menu a { display:flex; align-items:center; gap:12px; padding:12px 14px; color:#1e3a8a; text-decoration:none; font-size:14px; font-weight:600; border-radius:10px; transition:.2s; }
         .menu a:hover { background:#eff6ff; color:#2563eb; }
         .menu a.active { background:#dbeafe; color:#2563eb; }
-        .menu .logout { color:#dc2626; margin-top:auto; cursor:pointer; }
+       .profile-card {
+    display: flex !important;
+    flex-direction: row !important;
+    direction: rtl !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f0f6ff;
+    border: 1px solid #dbeafe;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.profile-card > div {
+    direction: rtl !important;
+    text-align: right !important;
+} .menu .logout { color:#dc2626; margin-top:auto; cursor:pointer; }
         .menu .logout:hover { background:#fef2f2; }
 
         .container { width:100%; max-width:550px; padding:20px; flex:1; }
