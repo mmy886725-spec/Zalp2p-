@@ -8,6 +8,36 @@
 <script src="supabase-config.js"></script>
 
 <style>
+  /* ZAL Loading Screen */
+#zalLoading {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    transition: opacity 0.25s ease;
+}
+
+#zalLoading.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+#zalLoading .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #dbeafe;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: zalRotate 0.8s linear infinite;
+}
+
+@keyframes zalRotate {
+    to { transform: rotate(360deg); }
+}
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
 body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;padding:20px 16px;}
 .wrap{max-width:560px;width:100%;background:#fff;border-radius:28px;padding:24px 20px 28px;border:1px solid #dbeafe;}
@@ -62,6 +92,9 @@ body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;paddin
 </style>
 </head>
 <body>
+  <div id="zalLoading">
+    <div class="spinner"></div>
+  </div>
 <div class="wrap">
 <div class="head">
 <div><h1>📨 Telegram Notifications</h1><p>Link your account to receive trade notifications.</p></div>
@@ -442,5 +475,26 @@ body{background:#f0f6ff;color:#1e3a8a;display:flex;justify-content:center;paddin
   }
 })();
 </script>
+  <script>
+(function () {
+    const screen = document.getElementById('zalLoading');
+
+    function hideLoading() {
+        if (screen) screen.classList.add('hidden');
+    }
+
+    window.addEventListener('load', async function () {
+        try {
+            if (window.ZAL_LANGUAGE_READY) {
+                await window.ZAL_LANGUAGE_READY;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        hideLoading();
+    });
+})();
+  </script>
 </body>
 </html>
