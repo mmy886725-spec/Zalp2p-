@@ -10,6 +10,36 @@
     <script src="language.js"></script>
 
     <style>
+        /* ZAL Loading Screen */
+#zalLoading {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    transition: opacity 0.25s ease;
+}
+
+#zalLoading.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+#zalLoading .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #dbeafe;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: zalRotate 0.8s linear infinite;
+}
+
+@keyframes zalRotate {
+    to { transform: rotate(360deg); }
+}
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
         body { background:#f0f6ff; color:#1e3a8a; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
 
@@ -189,7 +219,9 @@
         .amount-modal .modal-card .error-text.show { display: block; }
     </style>
 </head><body>
-
+<div id="zalLoading">
+    <div class="spinner"></div>
+</div>
 <header class="header">
     <div class="brand"><div class="logo">ZAL</div><span class="brand-name" data-i18n="brandName">منصة ZAL</span></div>
     <button class="hamburger" id="openDrawer" data-i18n-aria-label="openMenuAria" aria-label="فتح القائمة"><span></span><span></span><span></span></button>
@@ -811,5 +843,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 100);
 });
 </script>
+    <script>
+(function () {
+    const screen = document.getElementById('zalLoading');
+
+    function hideLoading() {
+        if (screen) screen.classList.add('hidden');
+    }
+
+    window.addEventListener('load', async function () {
+        try {
+            if (window.ZAL_LANGUAGE_READY) {
+                await window.ZAL_LANGUAGE_READY;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        hideLoading();
+    });
+})();
+    </script>
 </body>
 </html>
