@@ -595,7 +595,7 @@ async function loadAds() {
     try {
         const { data, error } = await supabaseClient
             .from('ads')
-            .select('id, user_id, type, status, amount, min_amount, rate, currency, payment_method, created_at, profiles:user_id(full_name, avatar_url)')
+            .select('id, user_id, type, status, amount, min_amount, rate, currency, payment_method, created_at')
             .neq('status', 'completed')
             .order('created_at', { ascending: false });
 
