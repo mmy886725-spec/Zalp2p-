@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_title">منصة ZAL - طلباتي وإعلاناتي</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="language.js"></script>
+    <style>
+        /* ZAL Loading Screen */
+#zalLoading {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    transition: opacity 0.25s ease;
+}
+
+#zalLoading.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+#zalLoading .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #dbeafe;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: zalRotate 0.8s linear infinite;
+}
+
+@keyframes zalRotate {
+    to { transform: rotate(360deg); }
+}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f6ff; color: #1e3a8a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding-bottom: 40px; }
+        .app-header { width: 100%; max-width: 500px; background-color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(37, 99, 235, 0.06); border-bottom: 1px solid #dbeafe; position: sticky; top: 0; z-index: 100; }
+        .header-title { font-size: 18px; font-weight: 800; color: #1e3a8a; }
+        .back-btn { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; }
+        .tabs-container { width: 100%; max-width: 500px; display: flex; background-color: #ffffff; border-bottom: 1px solid #dbeafe; margin-bottom: 16px; }
+        .tab-btn { flex: 1; padding: 14px 10px; text-align: center; font-size: 14px; font-weight: 700; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background-color: #f8fafc; }
+        .content-container { width: 100%; max-width: 500px; padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+        .tab-content { display: none; flex-direction: column; gap: 12px; }
+        .tab-content.active { display: flex; }
+        .order-card { background-color: #ffffff; border-radius: 16px; padding: 16px; border: 1px solid #dbeafe; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.04); display: flex; flex-direction: column; gap: 10px; }
+        .order-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+        .badge-type.buy { background-color: #dcfce7; color: #15803d; }
+        .badge-type.sell { background-color: #dbeafe; color: #1e40af; }
+        .badge-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+        .status-active { background-color: #eff6ff; color: #2563eb; }
+        .status-in-trade { background-color: #fef3c7; color: #d97706; }
+        .status-completed { background-color: #f0fdf4; color: #16a34a; }
+        .order-details-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .order-amount { font-size: 16px; font-weight: 800; color: #2563eb; }
+        .order-date { font-size: 10px; color: #94a3b8; }
+        .card-actions-row { display: flex; gap: 8px; margin-top: 6px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+        .btn-action { flex: 1; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-delete { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .btn-delete:hover { background-color: #fee2e2; }
+        .btn-reactivate { background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .btn-reactivate:hover { background-color: #dbeafe; }
+        .empty-state { text-align: center; padding: 40px 20px; background-color: #ffffff; border-radius: 16px; border: 1px solid #dbeafe; color: #64748b; font-size: 13px; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div id="zalLoading">
+    <div class="spinner"></div>
+</div>
+    <header class="app-header">
+        <h1 class="header-title" data-i18n="header_title">طلباتي وإعلاناتي</h1>
+        <a href="research.html" class="back-btn" data-i18n="back_to_market">➔ السوق</a>
+    </header>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('published')" data-i18n="tab_published">إعلاناتي المنشورة</button>
+        <button class="tab-btn" onclick="switchTab('completed')" data-i18n="tab_completed">الطلبات المكتملة</button>
+    </div>
+
+    <main class="content-container">
+        <div id="publishedTab" class="tab-content active">
+            <div class="empty-state" data-i18n="loading_ads">جاري تحميل الإعلانات...</div>
+        </div>
+        <div id="completedTab" class="tab-content">
+            <div class="empty-state" data-i18n="loading_completed_orders">جاري تحميل الطلبات المكتملة...</div>
+        </div>
+    </main>
+
+<script>
+    let currentUser = null;
+    let currentLang = 'ar';
+
+    // 1. دالة الترجمة المركزية الموحدة (تعتمد على ZALLanguage)
+    function tr(key) {
+        if (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function') {
+            const live = window.ZALLanguage.getLanguage();
+            if (live) currentLang = live;
+        }
+        
+        const dict = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function') 
+            ? window.ZALLanguage.getTranslations() 
+            : (window.ZAL_TRANSLATIONS && window.ZAL_TRANSLATIONS[currentLang]) || {};
+            
+        if (dict && dict[key]) return dict[key];
+        
+        // العودة للمفتاح نفسه إذا لم يجد الترجمة (لم نعد نستخدم كائن احتياطي عربي)
+        return key;
+    }
+
+    // 2. دالة الانتظار حتى يتم تحميل ملفات الترجمة
+    function waitForTranslations(timeoutMs = 3000) {
+        return new Promise((resolve) => {
+            if (window.ZAL_TRANSLATIONS && Object.keys(window.ZAL_TRANSLATIONS).length > 0) {
+                return resolve();
+            }
+            const onChanged = () => {
+                document.removeEventListener('zal:languageChanged', onChanged);
+                resolve();
+            };
+            document.addEventListener('zal:languageChanged', onChanged, { once: true });
+            setTimeout(() => {
+                document.removeEventListener('zal:languageChanged', onChanged);
+                resolve();
+            }, timeoutMs);
+        });
+    }
+
+    // 3. تحديث الصفحة إذا قام المستخدم بتغيير اللغة
+    document.addEventListener('zal:languageChanged', (e) => {
+        if (e && e.detail && e.detail.language) {
+            currentLang = e.detail.language;
+        }
+        if (currentUser) {
+            loadPublishedAds();
+            loadCompletedOrders();
+        }
+    });
+
+    async function initOrdersPage() {
+        await waitForTranslations();
+
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+            showUnavailable(document.getElementById('publishedTab'));
+            showUnavailable(document.getElementById('completedTab'));
+            return;
+        }
+
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error || !user) {
+            window.location.href = 'index.html';
+            return;
+        }
+        currentUser = user;
+
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('language')
+            .eq('id', user.id)
+            .single();
+
+        if (profile && profile.language) {
+            currentLang = profile.language;
+            if (window.ZALLanguage && typeof window.ZALLanguage.apply === 'function') {
+                window.ZALLanguage.apply(profile.language);
+            }
+        }
+
+        await loadPublishedAds();
+        await loadCompletedOrders();
+    }
+
+    function showUnavailable(container) {
+        container.innerHTML = `<div class="empty-state">${tr('error_load_data')}</div>`;
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (tabName === 'published') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('publishedTab').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('completedTab').classList.add('active');
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function buildOrderResumeUrl(order) {
+        const adType = order.ads?.type === 'sell' ? 'sell' : 'buy';
+        const isOwnerBuyer = order.buyer_id === currentUser.id;
+        const role = isOwnerBuyer ? 'buyer' : 'seller';
+        const page = role === 'buyer' ? 'chat-buy.html' : 'chat-sell.html';
+
+        const query = new URLSearchParams({
+            orderId: String(order.id),
+            adId: String(order.ad_id || ''),
+            role: role,
+            adType: adType,
+            amount: String(order.amount_zal || 0),
+            receivedAmount: String(order.total_local || 0),
+            rate: String(order.exchange_rate || 1),
+            currency: String(order.currency || ''),
+            payment: String(order.payment_method || ''),
+            merchant: ''
+        });
+        return page + '?' + query.toString();
+    }
+
+ 
+async function loadPublishedAds() {
+    const container = document.getElementById('publishedTab');
+    const t = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function')
+        ? window.ZALLanguage.getTranslations()
+        : {};
+    const dateLocale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+
+    try {
+        // جلب إعلانات المستخدم
+        const { data: ads, error } = await supabaseClient
+            .from('ads')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .neq('status', 'completed')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // جلب جميع الطلبات النشطة التي يكون المستخدم طرفًا فيها
+        const { data: myOrders, error: ordersError } = await supabaseClient
+            .from('orders')
+            .select('id, ad_id, buyer_id, seller_id, amount_zal, exchange_rate, currency, payment_method, total_local, status, ads(type, user_id)')
+            .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+            .in('status', ['active', 'received']);
+
+        if (ordersError) throw ordersError;
+
+        // الطلبات الخاصة بإعلانات الآخرين
+        const otherPartyOrders = (myOrders || []).filter(
+            order => order.ads && order.ads.user_id !== currentUser.id
+        );
+
+        // تجهيز الطلبات المرتبطة بإعلانات المستخدم
+        const ordersByAd = {};
+        (myOrders || []).forEach(order => {
+            ordersByAd[order.ad_id] = order;
+        });
+
+        // لا توجد إعلانات ولا طلبات
+        if ((!ads || ads.length === 0) && otherPartyOrders.length === 0) {
+            container.innerHTML = `<div class="empty-state">${t.no_published_ads || ''}</div>`;
+            return;
+        }
+
+        // عرض إعلانات المستخدم
+        const adsHTML = (ads || []).map(ad => {
+            const relatedOrder = ordersByAd[ad.id];
+
+            const resumeBtn = (ad.status === 'in_trade' && relatedOrder)
+                ? `<a class="btn-action btn-reactivate" style="text-decoration:none;text-align:center" href="${buildOrderResumeUrl(relatedOrder)}">${tr('resume_conversation')}</a>`
+                : '';
+
+            return `
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <span class="badge-type ${ad.type === 'buy' ? 'buy' : 'sell'}">
+                            ${ad.type === 'buy' ? t.buy_order : t.sell_offer}
+                        </span>
+                        <span class="badge-status ${ad.status === 'active' ? 'status-active' : 'status-in-trade'}">
+                            ${ad.status === 'active' ? t.status_active_market : t.status_in_trade}
+                        </span>
+                    </div>
+
+                    <div class="order-details-row">
+                        <span class="order-amount">${ad.amount || 0} ZAL</span>
+                        <span style="font-weight:700;">${t.price_label} ${ad.rate || 0}</span>
+                    </div>
+
+                    <div class="order-date">
+                        ${t.publish_date_label} ${new Date(ad.created_at).toLocaleDateString(dateLocale)}
+                    </div>
+
+                    <div class="card-actions-row">
+                        ${resumeBtn}
+                        ${ad.status === 'in_trade' ? `
+                            <button class="btn-action btn-reactivate" onclick="reactivateAd('${ad.id}')">${t.btn_reactivate}</button>
+                        ` : ''}
+                        <button class="btn-action btn-delete" onclick="deleteAd('${ad.id}')">${t.btn_delete}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // عرض الطلبات التي بدأها المستخدم على إعلانات الآخرين
+        const ordersHTML = otherPartyOrders.map(order => `
+            <div class="order-card">
+                <div class="order-card-header">
+                    <span class="badge-type ${order.ads?.type === 'buy' ? 'buy' : 'sell'}">
+                        ${order.ads?.type === 'buy' ? t.buy_order : t.sell_offer}
+                    </span>
+                    <span class="badge-status status-in-trade">
+                        ${t.status_in_trade}
+                    </span>
+                </div>
+
+                <div class="order-details-row">
+                    <span class="order-amount">${order.amount_zal || 0} ZAL</span>
+                    <span>${order.total_local || 0} ${order.currency || ''}</span>
+                </div>
+
+                <div class="card-actions-row">
+                    <a class="btn-action btn-reactivate"
+                       style="text-decoration:none;text-align:center"
+                       href="${buildOrderResumeUrl(order)}">
+                        ${tr('resume_conversation')}
+                    </a>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = adsHTML + ordersHTML;
+
+    } catch (err) {
+        console.error('loadPublishedAds error:', err);
+        container.innerHTML = `<div class="empty-state">${tr('error_load_data')}</div>`;
+    }
+}
+
+
+    async function loadCompletedOrders() {
+        const container = document.getElementById('completedTab');
+        const t = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function') 
+            ? window.ZALLanguage.getTranslations() 
+            : {};
+        const dateLocale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+
+        try {
+            const { data: orders, error } = await supabaseClient
+                .from('orders')
+                .select('id, ad_id, buyer_id, seller_id, amount_zal, exchange_rate, currency, payment_method, total_local, status, created_at, completed_at, ads(type)')
+                .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+                .eq('status', 'completed')
+                .order('completed_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `<div class="empty-state">${t.no_completed_orders || ''}</div>`;
+            } else {
+                container.innerHTML = orders.map(order => {
+                    const adType = order.ads?.type === 'sell' ? 'sell' : 'buy';
+                    return `
+                    <div class="order-card">
+                        <div class="order-card-header">
+                            <span class="badge-type ${adType === 'buy' ? 'buy' : 'sell'}">
+                                ${adType === 'buy' ? t.buy_completed : t.sell_completed}
+                            </span>
+                            <span class="badge-status status-completed">${t.status_completed}</span>
+                        </div>
+                        <div class="order-details-row">
+                            <span class="order-amount">${order.amount_zal || 0} ZAL</span>
+                            <span style="font-weight: 700;">${t.total_price_label} ${order.total_local || 0} ${order.currency || ''}</span>
+                        </div>
+                        <div class="order-date">${t.completion_date_label} ${new Date(order.completed_at || order.created_at).toLocaleDateString(dateLocale)}</div>
+                        <div class="card-actions-row"><a class="btn-action btn-reactivate" style="text-decoration:none;text-align:center" href="${buildOrderResumeUrl(order)}" aria-label="${tr('open_original_conversation')}" title="${tr('open_original_conversation')}">${tr('open_conversation')}</a></div>
+                    </div>
+                    `;
+                }).join('');
+            }
+
+        } catch (err) {
+            container.innerHTML = `<div class="empty-state">${tr('error_load_data')}</div>`;
+        }
+    }
+
+    async function deleteAd(adId) {
+        const t = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function') 
+            ? window.ZALLanguage.getTranslations() 
+            : {};
+        if (!confirm(t.confirm_delete_ad)) return;
+
+        try {
+            const { data, error } = await supabaseClient.rpc('delete_ad', { p_ad_id: adId });
+            if (error) throw error;
+            if (!data || data.success !== true) throw new Error('delete_ad failed');
+
+            alert(t.ad_deleted_success);
+            loadPublishedAds();
+
+        } catch (err) {
+            alert((t.error_deleting_ad || '') + ' ' + err.message);
+        }
+    }
+
+    async function reactivateAd(adId) {
+        const t = (window.ZALLanguage && typeof window.ZALLanguage.getTranslations === 'function') 
+            ? window.ZALLanguage.getTranslations() 
+            : {};
+        try {
+            const { data, error } = await supabaseClient.rpc('reactivate_ad', { p_ad_id: adId });
+            if (error) throw error;
+            if (!data || data.success !== true) throw new Error('reactivate_ad failed');
+
+            alert(t.ad_reactivated_success);
+            loadPublishedAds();
+
+        } catch (err) {
+            alert((t.error_reactivating_ad || '') + ' ' + err.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initOrdersPage);
+</script>
+    <script>
+(function () {
+    const screen = document.getElementById('zalLoading');
+
+    function hideLoading() {
+        if (screen) screen.classList.add('hidden');
+    }
+
+    window.addEventListener('load', async function () {
+        try {
+            if (window.ZAL_LANGUAGE_READY) {
+                await window.ZAL_LANGUAGE_READY;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        hideLoading();
+    });
+})();
+    </script>
+</body>
+</html>
