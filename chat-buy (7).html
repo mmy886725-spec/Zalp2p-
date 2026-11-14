@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title data-i18n-title="chatTitle">ZAL - المحادثة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script><script src="language.js"></script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+body { background:#f0f6ff; color:#1e3a8a; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+
+.chat-page {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #f0f6ff;
+    z-index: 2000;
+    flex-direction: column;
+    max-width: 550px;
+    margin: 0 auto;
+}
+.chat-page.open { display: flex; }
+
+.chat-page .chat-header-custom {
+    background: #fff;
+    padding: 16px 20px;
+    border-bottom: 1px solid #dbeafe;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.chat-page .chat-header-custom .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #2563eb;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+.chat-page .chat-header-custom .back-btn:hover { background:#eff6ff; border-radius:8px; }
+.chat-page .chat-header-custom .merchant-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+.chat-page .chat-header-custom .merchant-info .avatar {
+    width: 40px; height: 40px;
+    background: #2563eb;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+}
+.chat-page .chat-header-custom .merchant-info .name-status {
+    display: flex;
+    flex-direction: column;
+}
+.chat-page .chat-header-custom .merchant-info .name {
+    font-weight: 700;
+    font-size: 15px;
+}
+.chat-page .chat-header-custom .merchant-info .status {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.chat-page .chat-header-custom .merchant-info .status .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.chat-page .chat-header-custom .merchant-info .status .dot.online { background: #22c55e; }
+.chat-page .chat-header-custom .merchant-info .status .dot.offline { background: #94a3b8; }
+
+.chat-page .chat-body {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f8fafc;
+}
+.chat-page .chat-message {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+.chat-page .chat-message.sent {
+    background: #2563eb;
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.chat-page .chat-message.received {
+    background: #e9edf4;
+    color: #1e293b;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.chat-page .chat-message.system {
+    background: #fef3c7;
+    color: #92400e;
+    align-self: center;
+    max-width: 90%;
+    text-align: center;
+    font-size: 12px;
+    border-radius: 8px;
+}
+.chat-page .chat-message .time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+    display: block;
+}
+.chat-page .chat-message .file-preview {
+    max-width: 100%;
+    border-radius: 8px;
+    max-height: 200px;
+    margin-bottom: 4px;
+}
+
+.chat-page .chat-amount-info {
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #dbeafe;
+    margin: 4px 0 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 13px;
+}
+.chat-page .chat-amount-info .info-item {
+    display: flex;
+    flex-direction: column;
+}
+.chat-page .chat-amount-info .info-item.highlight {
+    grid-column: span 2;
+    background: #eff6ff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px dashed #bfdbfe;
+}
+.chat-page .chat-amount-info .info-item .label {
+    font-size: 11px;
+    color: #64748b;
+}
+.chat-page .chat-amount-info .info-item .value {
+    font-weight: 700;
+    color: #1e3a8a;
+}
+.chat-page .chat-amount-info .info-item.highlight .value {
+    color: #2563eb;
+    font-size: 15px;
+}
+
+.chat-page .chat-input-area {
+    background: #fff;
+    padding: 12px 16px;
+    border-top: 1px solid #dbeafe;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+}
+.chat-page .chat-input-area input[type="text"] {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 14px;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 30px;
+    font-size: 13px;
+    outline: none;
+    background: #f8fafc;
+}
+.chat-page .chat-input-area input[type="text"]:focus { border-color: #2563eb; background: #fff; }
+.chat-page .chat-input-area input[type="text"]:disabled { background:#e9edf4; cursor:not-allowed; }
+
+.chat-page .chat-input-area button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.chat-page .chat-input-area button:hover { background: #1d4ed8; }
+.chat-page .chat-input-area button:disabled { background:#94a3b8; cursor:not-allowed; opacity: 0.6; }
+
+.chat-page .chat-input-area .file-btn { background: #64748b; }
+.chat-page .chat-input-area .file-btn:hover { background: #475569; }
+.chat-page .chat-input-area .report-btn { background: #dc2626; }
+.chat-page .chat-input-area .report-btn:hover { background: #b91c1c; }
+.chat-page .chat-input-area .receive-btn { background: #16a34a; }
+.chat-page .chat-input-area .receive-btn:hover { background: #15803d; }
+.chat-page .chat-input-area .finish-btn { background: #f59e0b; }
+.chat-page .chat-input-area .finish-btn:hover { background: #d97706; }
+
+.chat-page .chat-input-area .btn-label {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 0 4px;
+}
+.chat-page .chat-input-area .action-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.chat-page .chat-input-area .action-buttons button {
+    width: auto;
+    padding: 0 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    gap: 4px;
+}
+
+.hidden { display: none !important; }
+.chat-page { display:flex; position:relative; inset:auto; width:100%; min-height:100vh; height:100dvh; max-width:550px; margin:0 auto; }
+.chat-page .chat-body { min-height:0; }
+.chat-page .chat-input-area { margin-top:auto; }
+
+.zal-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease-in-out;
+    padding: 20px;
+}
+.zal-modal-overlay.active { opacity: 1; visibility: visible; }
+.zal-modal-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 20px;
+    padding: 24px 20px 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.25s ease-in-out;
+    border: 1px solid #e2e8f0;
+}
+.zal-modal-overlay.active .zal-modal-card { transform: scale(1); }
+.zal-modal-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+}
+.zal-modal-icon.success { background: #dcfce7; color: #16a34a; }
+.zal-modal-icon.error { background: #fee2e2; color: #dc2626; }
+.zal-modal-icon.warning { background: #fef3c7; color: #d97706; }
+.zal-modal-icon.info { background: #dbeafe; color: #2563eb; }
+.zal-modal-icon.confirm { background: #e0e7ff; color: #4f46e5; }
+.zal-modal-title { font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.zal-modal-message { font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px; word-break: break-word; }
+.zal-modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+}
+.zal-modal-input:focus { border-color: #2563eb; }
+.zal-modal-actions { display: flex; gap: 10px; justify-content: center; }
+.zal-modal-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.zal-modal-btn:active { transform: scale(0.98); }
+.zal-modal-btn-primary { background: #2563eb; color: #ffffff; }
+.zal-modal-btn-primary:hover { background: #1d4ed8; }
+.zal-modal-btn-danger { background: #dc2626; color: #ffffff; }
+.zal-modal-btn-danger:hover { background: #b91c1c; }
+.zal-modal-btn-secondary { background: #f1f5f9; color: #475569; }
+.zal-modal-btn-secondary:hover { background: #e2e8f0; }
+</style>
+</head>
+<body data-chat-type="buy">
+
+<div class="chat-page open" id="chatPage">
+  <div class="chat-header-custom">
+    <button class="back-btn" id="closeChat" data-i18n-aria="back" aria-label="رجوع"><i class="fas fa-arrow-right"></i></button>
+    <div class="merchant-info">
+      <div class="avatar" id="chatAvatar">ت</div>
+      <div class="name-status">
+        <span class="name" id="chatMerchantName" data-i18n="The-merchant">التاجر</span>
+        <span class="status"><span class="dot online" id="chatStatusDot"></span><span id="chatStatusText" data-i18n="online">متصل</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div style="padding:0 16px;background:#f8fafc;">
+    <div class="chat-amount-info" id="adInfo">
+      <div class="info-item"><span class="label" data-i18n="amountLabel">المبلغ المتفق عليه</span><span class="value" id="chatAmount">-</span></div>
+      <div class="info-item"><span class="label" data-i18n="rateLabel">سعر الصرف</span><span class="value" id="chatRate">-</span></div>
+      <div class="info-item"><span class="label" data-i18n="currencyLabel">العملة</span><span class="value" id="chatCurrency">-</span></div>
+      <div class="info-item"><span class="label" data-i18n="paymentLabel">طريقة الدفع</span><span class="value" id="chatPayment">-</span></div>
+    </div>
+  </div>
+  <div class="chat-input-area">
+    <input type="text" id="msgInput" placeholder="اكتب رسالتك..." data-i18n-placeholder="messagePlaceholder">
+    <button id="sendMsgBtn" data-i18n-aria="send" aria-label="إرسال"><i class="fas fa-paper-plane"></i></button>
+    <div class="action-buttons">
+      <button class="file-btn" id="fileBtn" data-i18n-aria="attach" aria-label="إرفاق ملف"><i class="fas fa-paperclip"></i></button>
+      <button class="report-btn" id="reportBtn" data-i18n-aria="report" aria-label="الإبلاغ عن مشكلة"><i class="fas fa-flag"></i></button>
+      <button class="receive-btn" id="receiveBtn"><i class="fas fa-check-circle"></i> <span class="btn-label" data-i18n="receivedConfirmedBtn">تم الاستلام</span></button>
+      <button class="finish-btn" id="finishBtn"><i class="fas fa-handshake"></i> <span class="btn-label" data-i18n="finish">إنهاء</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="zal-modal-overlay" id="zalModal">
+  <div class="zal-modal-card">
+    <div class="zal-modal-icon" id="zalModalIcon"><i class="fas fa-info"></i></div>
+    <div class="zal-modal-title" id="zalModalTitle">تنبيه</div>
+    <div class="zal-modal-message" id="zalModalMessage">محتوى الرسالة...</div>
+    <input type="text" class="zal-modal-input hidden" id="zalModalInput" placeholder="" />
+    <div class="zal-modal-actions" id="zalModalActions"></div>
+  </div>
+</div>
+<script>
+    // ============================================================
+    // الترجمة عبر النظام المركزي حصراً
+    // ============================================================
+    const params = new URLSearchParams(location.search);
+
+    // t() تعتمد حصراً على دالة النظام المركزي translateKey
+    const t = key => (typeof window.translateKey === 'function') ? window.translateKey(key) : key;
+
+    // اللغة الحالية من النظام المركزي (لتنسيق الوقت فقط)
+    function currentLang() {
+      if (window.ZALLanguage && typeof window.ZALLanguage.getLanguage === 'function') {
+        return window.ZALLanguage.getLanguage();
+      }
+      return document.documentElement.lang || 'ar';
+    }
+
+    // تعريف $ قبل أي استخدام (كان سبب تعطّل الأزرار بسبب TDZ)
+    const $ = id => document.getElementById(id);
+
+    // حالة المحادثة (نُقلت للأعلى لتفادي TDZ داخل مستمع تغيير اللغة)
+    let isItemReceived = false, isChatCompleted = false;
+
+    // ترجمة السمات غير المدعومة مركزياً عبر translateKey فقط
+    function applyTranslations() {
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        const key = el.getAttribute('data-i18n-aria');
+        if (key) el.setAttribute('aria-label', t(key));
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        if (key) el.textContent = t(key);
+      });
+    }
+    // إن لم تكن language.js جاهزة بعد، أعِد المحاولة بعد تجهيز DOM
+    if (typeof window.translateKey === 'function') {
+      applyTranslations();
+    } else {
+      document.addEventListener('DOMContentLoaded', applyTranslations);
+    }
+
+    // إعادة ترجمة ديناميكية عند تغيير اللغة من النظام المركزي
+    document.addEventListener('zal:languageChanged', () => {
+      applyTranslations();
+      // إعادة ترجمة النصوص الديناميكية المتغيرة
+      const statusText = $('chatStatusText');
+      if (statusText) {
+        const dot = $('chatStatusDot');
+        const isOnline = dot && dot.classList.contains('online');
+        statusText.textContent = t(isOnline ? 'online' : 'offline');
+      }
+      const finishBtn = $('finishBtn');
+      if (finishBtn) {
+        finishBtn.disabled = !isItemReceived || isChatCompleted;
+      }
+      // اسم التاجر الافتراضي (إن لم يُمرَّر من الرابط)
+      if (!params.get('merchant')) {
+        const nameEl = $('chatMerchantName');
+        if (nameEl) nameEl.textContent = t('chatMerchantNameDefault');
+      }
+      // عنوان المبلغ المحتسب
+      const recvLabel = document.querySelector('[data-i18n="calculatedAmountLabel"]');
+      if (recvLabel) recvLabel.textContent = t('calculatedAmountLabel');
+      // عنوان زر الإنهاء (متغير ديناميكياً) — يُضبط عبر title
+    });
+
+    const role = params.get('role') === 'seller' ? 'seller' : 'buyer';
+    const chatType = document.body.dataset.chatType || params.get('adType') || 'buy';
+
+    // ملاحظة إصلاح: كان هناك `const supabase = ...` يُعيد تعريف المتغير العالمي
+    // الخاص بمكتبة Supabase (shadowing) ويمنع عمل كل الاستدعاءات عند null.
+    // استُبدل باسم محلي `db` مع الحفاظ على الكائن نفسه، دون تغيير أي استدعاء دالة.
+    const db = (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
+
+    const ad = {
+     merchant: params.get('merchant') || t('chatMerchantNameDefault'),
+     avatar: (params.get('merchant') || t('buyerAvatarDefault')).slice(0,1),
+     amount: Number(params.get('amount')) || null,
+     receivedAmount: params.get('receivedAmount') !== null ? Number(params.get('receivedAmount')) : null,
+     // orderId: معرّف الطلب من orders.id — يُستخدم حصراً لعمليات قاعدة البيانات وRPC وRealtime
+     orderId: params.get('orderId') || params.get('adId') || '',
+     // adId: معرّف الإعلان من ads.id — يُبقى للعرض فقط
+     adId: params.get('adId') || '',
+     rate: Number(params.get('rate')) || null,
+     currency: params.get('currency') || null,
+     payment: params.get('payment') || null
+    };
+
+    // الاتصال مرتبط بمعرّف الطلب (كل عمليات قاعدة البيانات تعتمد عليه)
+    const hasConnection = !!(db && ad.orderId);
+
+    function showCustomModal({ type = 'info', title = '', message = '', showInput = false, inputPlaceholder = '', confirmText = t('confirm'), cancelText = t('cancel'), showCancel = false }) {
+      return new Promise((resolve) => {
+        const modal = $('zalModal');
+        const iconEl = $('zalModalIcon');
+        const titleEl = $('zalModalTitle');
+        const msgEl = $('zalModalMessage');
+        const inputEl = $('zalModalInput');
+        const actionsEl = $('zalModalActions');
+
+        titleEl.textContent = title || t(type);
+        msgEl.textContent = message;
+
+        iconEl.className = 'zal-modal-icon ' + type;
+        let iconHTML = '<i class="fas fa-info"></i>';
+        if (type === 'success') iconHTML = '<i class="fas fa-check-circle"></i>';
+        if (type === 'error') iconHTML = '<i class="fas fa-exclamation-circle"></i>';
+        if (type === 'warning') iconHTML = '<i class="fas fa-exclamation-triangle"></i>';
+        if (type === 'confirm') iconHTML = '<i class="fas fa-question-circle"></i>';
+        iconEl.innerHTML = iconHTML;
+
+        if (showInput) {
+          inputEl.classList.remove('hidden');
+          inputEl.value = '';
+          inputEl.placeholder = inputPlaceholder;
+        } else {
+          inputEl.classList.add('hidden');
+        }
+
+        actionsEl.innerHTML = '';
+
+        if (showCancel) {
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'zal-modal-btn zal-modal-btn-secondary';
+          cancelBtn.textContent = cancelText;
+          cancelBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+            resolve({ confirmed: false, value: null });
+          });
+          actionsEl.appendChild(cancelBtn);
+        }
+
+        const okBtn = document.createElement('button');
+        okBtn.className = `zal-modal-btn ${type === 'error' || type === 'warning' ? 'zal-modal-btn-danger' : 'zal-modal-btn-primary'}`;
+        okBtn.textContent = showCancel ? confirmText : t('ok');
+        okBtn.addEventListener('click', () => {
+          const inputValue = inputEl.value;
+          modal.classList.remove('active');
+          resolve({ confirmed: true, value: inputValue });
+        });
+        actionsEl.appendChild(okBtn);
+
+        modal.classList.add('active');
+      });
+    }
+
+    async function customAlert(message, type = 'info', title = '') {
+      // عنوان صريح لتفادي ظهور مفتاح النوع (info/error/…) للمستخدم
+      const safeTitle = title || (type === 'success' ? t('success') : type === 'error' ? t('error') : type === 'warning' ? t('warning') : t('confirm'));
+      return await showCustomModal({ type, title: safeTitle, message, showCancel: false });
+    }
+    async function customConfirm(message, title = t('confirm')) {
+      const res = await showCustomModal({ type: 'confirm', title, message, showCancel: true });
+      return res.confirmed;
+    }
+    async function customPrompt(message, placeholder = '') {
+      const res = await showCustomModal({ type: 'info', title: t('reportPrompt'), message, showInput: true, inputPlaceholder: placeholder, showCancel: true });
+      return res.confirmed ? res.value : null;
+    }
+
+    $('chatAvatar').textContent = ad.avatar;
+    $('chatMerchantName').textContent = ad.merchant;
+    $('chatStatusText').textContent = t('offline');
+    $('chatStatusDot').className = 'dot offline';
+    $('chatAmount').textContent = ad.amount !== null ? ad.amount + ' ZAL' : '-';
+    $('chatRate').textContent = ad.rate !== null ? ad.rate : '-';
+    $('chatCurrency').textContent = ad.currency || '-';
+    $('chatPayment').textContent = ad.payment || '-';
+
+    let calculatedVal = null;
+    if (ad.receivedAmount !== null && !isNaN(ad.receivedAmount) && ad.receivedAmount > 0) {
+      calculatedVal = ad.receivedAmount;
+    } else if (ad.amount && ad.rate && !isNaN(ad.amount) && !isNaN(ad.rate)) {
+      calculatedVal = ad.amount * ad.rate;
+    }
+
+    if (calculatedVal !== null) {
+      const amountInfo = $('adInfo');
+      if (amountInfo && !$('chatReceivedAmount')) {
+        const item = document.createElement('div');
+        item.className = 'info-item highlight';
+        item.innerHTML = `<span class="label" data-i18n="calculatedAmountLabel">${t('calculatedAmountLabel')}</span><span class="value" id="chatReceivedAmount"></span>`;
+        amountInfo.appendChild(item);
+      }
+      if ($('chatReceivedAmount')) {
+        $('chatReceivedAmount').textContent = calculatedVal.toFixed(2) + ' ' + (ad.currency || '');
+      }
+    }
+
+    $('receiveBtn').style.display = role === 'buyer' ? 'flex' : 'none';
+    $('finishBtn').style.display = role === 'seller' ? 'flex' : 'none';
+    $('finishBtn').disabled = true;
+    $('finishBtn').style.opacity = '.5';
+
+    const now = () => new Date().toLocaleTimeString(currentLang() === 'ar' ? 'ar-EG' : 'en-US', {hour:'2-digit',minute:'2-digit'});
+
+    function addMessage(text, type='system', createdAt=null) {
+      const el = document.createElement('div');
+      el.className = 'chat-message ' + type;
+      el.textContent = text;
+      const time = document.createElement('span');
+      time.className = 'time';
+      time.textContent = createdAt ? new Date(createdAt).toLocaleTimeString(currentLang() === 'ar' ? 'ar-EG' : 'en-US', {hour:'2-digit',minute:'2-digit'}) : now();
+      el.appendChild(time);
+      $('chatBody').appendChild(el);
+      $('chatBody').scrollTop = $('chatBody').scrollHeight;
+    }
+    function lockChat(reason) {
+      if (reason) addMessage(reason, 'system');
+      $('msgInput').disabled = true;
+      $('sendMsgBtn').disabled = true;
+      $('fileBtn').disabled = true;
+      $('reportBtn').disabled = true;
+      $('receiveBtn').disabled = true;
+      $('finishBtn').disabled = true;
+    }
+
+    async function loadOrderStatus() {
+      if (!hasConnection) return;
+      try {
+        const { data, error } = await db
+          .from('orders')
+          .select('id, status, buyer_confirmed, seller_finished')
+          .eq('id', ad.orderId)
+          .limit(1);
+        if (error) { console.warn('Order status read failed:', error); return; }
+        if (!data || data.length === 0) return;
+        const row = data[0];
+        if (row.buyer_confirmed === true || row.status === 'received') {
+          isItemReceived = true;
+          $('receiveBtn').disabled = true;
+          $('receiveBtn').style.opacity = '.5';
+        }
+        if (row.status === 'completed' || row.seller_finished === true) {
+          isChatCompleted = true;
+          lockChat();
+        }
+      } catch (err) {
+        console.warn('Order status exception:', err);
+      }
+    }
+
+    let currentChatUserId = null;
+    let chatRealtime = null;
+    async function loadChatMessages() {
+      if (!hasConnection) {
+        lockChat(t('chatUnavailable'));
+        return;
+      }
+      const { data: authData, error: authError } = await db.auth.getUser();
+      if (authError || !authData?.user) {
+        lockChat(t('chatUnavailable'));
+        return;
+      }
+      currentChatUserId = authData.user.id;
+      const { data, error } = await db.from('chat_messages')
+        .select('id, sender_id, sender_role, content, created_at')
+        .eq('order_id', String(ad.orderId)).order('created_at', { ascending: true });
+      if (error) {
+        console.error('Load chat messages failed:', error);
+        lockChat(t('chatUnavailable'));
+        return;
+      }
+      $('chatBody').innerHTML = '';
+      if (data && data.length) {
+        data.forEach(m => {
+          const messageType = m.sender_id === currentChatUserId ? 'sent' : 'received';
+          addMessage(m.content, messageType, m.created_at);
+        });
+      } else {
+        addMessage(t('welcomeAmount').replace('{amount}', ad.amount !== null ? ad.amount + ' ZAL' : ''), 'received');
+      }
+      // إزالة القناة القديمة قبل الاشتراك الجديد لتفادي الاشتراكات المكررة
+      if (chatRealtime) {
+        try { db.removeChannel(chatRealtime); } catch (_) {}
+        chatRealtime = null;
+      }
+      chatRealtime = db.channel('chat-messages-' + String(ad.orderId))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'order_id=eq.' + String(ad.orderId) }, payload => {
+          const m = payload.new;
+          if (m.sender_id !== currentChatUserId) {
+            addMessage(m.content, 'received', m.created_at);
+          }
+        }).subscribe();
+    }
+
+    (async () => {
+      await loadOrderStatus();
+      await loadChatMessages();
+    })();
+
+    async function sendMessage() {
+      if (isChatCompleted) return;
+      if (!hasConnection) {
+        await customAlert(t('chatUnavailable'), 'warning');
+        return;
+      }
+      const input = $('msgInput'), msg = input.value.trim();
+      if (!msg) return;
+      const { data: authData, error: authError } = await db.auth.getUser();
+      if (authError || !authData?.user) {
+        await customAlert(t('chatUnavailable'), 'warning');
+        return;
+      }
+      const { data, error } = await db.from('chat_messages').insert({
+        order_id: String(ad.orderId), sender_id: authData.user.id, sender_role: role, content: msg
+      }).select('id, created_at').single();
+      if (error) {
+        console.error('Save chat message failed:', error);
+        await customAlert(t('saveFailed'), 'error', t('error'));
+        return;
+      }
+      currentChatUserId = authData.user.id;
+      addMessage(msg, 'sent', data?.created_at || new Date().toISOString());
+      input.value = '';
+    }
+
+    $('sendMsgBtn').addEventListener('click', sendMessage);
+    $('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+    $('fileBtn').addEventListener('click', () => {
+      if (isChatCompleted || !hasConnection) return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt';
+      input.multiple = true;
+      input.onchange = () => [...input.files].forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const el = document.createElement('div');
+            el.className = 'chat-message sent';
+            const img = document.createElement('img');
+            img.src = reader.result;
+            img.className = 'file-preview';
+            img.alt = file.name;
+            el.appendChild(img);
+            el.appendChild(document.createElement('br'));
+            el.append(document.createTextNode(t('fileAttached') + ' ' + file.name));
+            $('chatBody').appendChild(el);
+            $('chatBody').scrollTop = $('chatBody').scrollHeight;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          addMessage(t('fileAttached') + ' ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)', 'sent');
+        }
+      });
+      input.click();
+    });
+
+    $('reportBtn').addEventListener('click', async () => {
+      if (isChatCompleted) return;
+
+      const problem = await customPrompt(t('reportPrompt'), t('reportPrompt'));
+      if (!problem || !problem.trim()) {
+        if (problem !== null) await customAlert(t('reportEmpty'), 'warning');
+        return;
+      }
+      const confirmed = await customConfirm(t('reportConfirm'), t('reportConfirm'));
+      if (!confirmed) return;
+
+      if (!hasConnection) {
+        await customAlert(t('saveFailed'), 'error', t('error'));
+        return;
+      }
+
+      try {
+        const { data: authData, error: authError } = await db.auth.getUser();
+        if (authError || !authData?.user) {
+          await customAlert(t('saveFailed'), 'error', t('error'));
+          return;
+        }
+
+        let reportedUserId = null;
+        try {
+          const { data: orderRows } = await db
+            .from('orders')
+            .select('buyer_id, seller_id')
+            .eq('id', ad.orderId)
+            .limit(1);
+          if (orderRows && orderRows.length > 0) {
+            reportedUserId = orderRows[0].buyer_id === authData.user.id
+              ? orderRows[0].seller_id
+              : orderRows[0].buyer_id;
+          }
+        } catch (_) { /* تجاهل */ }
+
+        const { error } = await db
+          .from('reports')
+          .insert([{
+            order_id: ad.orderId || null,
+            reporter_id: authData.user.id,
+            reported_user_id: reportedUserId,
+            reporter_role: role,
+            reason: problem.trim(),
+            amount_snapshot: ad.amount !== null ? ad.amount : null,
+            currency_snapshot: ad.currency || null,
+            payment_snapshot: ad.payment || null,
+            exchange_rate_snapshot: ad.rate !== null ? ad.rate : null
+          }]);
+
+        if (error) {
+          console.error('Report insert failed:', error);
+          await customAlert(t('saveFailed'), 'error', t('error'));
+          return;
+        }
+
+        addMessage(t('reportPrefix') + ' ' + problem.trim(), 'sent');
+        await customAlert(t('success'), 'success');
+      } catch (err) {
+        console.error('Report error:', err);
+        await customAlert(t('saveFailed'), 'error', t('error'));
+      }
+    });
+
+    $('receiveBtn').addEventListener('click', async () => {
+      if (isChatCompleted || role !== 'buyer' || isItemReceived) return;
+
+      const confirmed = await customConfirm(t('receiveConfirm'), t('receivedConfirmedBtn'));
+      if (!confirmed) return;
+
+      if (!hasConnection) {
+        await customAlert(t('saveFailed'), 'error', t('error'));
+        return;
+      }
+
+      try {
+        const { data, error } = await db.rpc('confirm_order_received', {
+          p_order_id: ad.orderId
+        });
+
+        if (error) {
+          console.error('confirm_order_received error:', error);
+          await customAlert(t('saveFailed') + '\n' + (error.message || ''), 'error', t('error'));
+          return;
+        }
+
+        if (!data || data.success !== true) {
+          await customAlert(t('saveFailed'), 'error', t('error'));
+          return;
+        }
+
+        isItemReceived = true;
+        $('receiveBtn').disabled = true;
+        $('receiveBtn').style.opacity = '.5';
+        addMessage(t('received'), 'system');
+        await customAlert(t('received'), 'success', t('success'));
+
+      } catch (err) {
+        console.error('Receive error:', err);
+        await customAlert(t('saveFailed'), 'error', t('error'));
+      }
+    });
+
+    $('finishBtn').addEventListener('click', async () => {
+      if (isChatCompleted || role !== 'seller') return;
+
+      if (!hasConnection) {
+        await customAlert(t('saveFailed'), 'error', t('error'));
+        return;
+      }
+
+      try {
+        const { data: orderRows, error: readErr } = await db
+          .from('orders')
+          .select('id, buyer_confirmed, status')
+          .eq('id', ad.orderId)
+          .limit(1);
+
+        if (readErr) {
+          console.error('Order read failed:', readErr);
+          await customAlert(t('saveFailed'), 'error', t('error'));
+          return;
+        }
+        if (!orderRows || orderRows.length === 0) {
+          await customAlert(t('notAuthorized'), 'error', t('error'));
+          return;
+        }
+
+        if (orderRows[0].buyer_confirmed !== true) {
+          await customAlert(t('finishBlocked'), 'warning', t('warning'));
+          return;
+        }
+
+        const confirmed = await customConfirm(t('finishConfirm'), t('finish'));
+        if (!confirmed) return;
+
+        const { data, error } = await db.rpc('finalize_order', {
+          p_order_id: ad.orderId
+        });
+
+        if (error) {
+          console.error('finalize_order error:', error);
+          await customAlert(t('finishFailed') + '\n' + (error.message || ''), 'error', t('error'));
+          return;
+        }
+
+        if (!data || data.success !== true) {
+          await customAlert(t('finishFailed'), 'error', t('error'));
+          return;
+        }
+
+        isChatCompleted = true;
+        addMessage(t('finished'), 'system');
+        await customAlert(t('finished'), 'success', t('success'));
+        lockChat();
+
+      } catch (err) {
+        console.error('Finish error:', err);
+        await customAlert(t('finishFailed'), 'error', t('error'));
+      }
+    });
+
+    $('closeChat').addEventListener('click', async () => {
+      const confirmed = await customConfirm(t('closeConfirm'), t('closeConfirm'));
+      if (confirmed) {
+        if (history.length > 1) history.back();
+        else location.href = 'research.html';
+      }
+    });
+</script>
+
+</body>
+</html>
